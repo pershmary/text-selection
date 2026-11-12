@@ -1,2 +1,47 @@
+/* Integration layer: geometry belongs to table-widget, colors and type to ui-kit. */
+:root {
+  --page-bg: var(--background-background-color);
+  --text: var(--text-text-color);
+  --border: var(--border-unaccented_border-color);
+  --header-bg: var(--background-unaccented_background-color);
+  --group-bg: var(--background-contrast_background-color);
+  --font: var(--font-font-family-default), sans-serif;
+  --accent: var(--border-info_border-color);
+  --icon-secondary: var(--icon-secondary_icon-color);
+  --icon-info: var(--icon-info_icon-color);
+  --icon-danger: var(--icon-danger_icon-color);
+  --success: var(--background-contrast-success_color);
+  --text-secondary: var(--text-secondary_text-color);
+  --shell-bg: var(--components-constructor-constructor_background-color);
+  --shell-hover: color-mix(in srgb, var(--icon-icon-color) 5%, transparent);
+}
+body, .app-head, .app-left, .app-right { background: var(--shell-bg); }
+body { color: var(--text-text-color); font-weight: var(--font-font-weight-regular); }
+.app-center { background: var(--background-background-color); }
+.app-toolbar { background: var(--background-unaccented_background-color); box-shadow: 0 -8px 0 0 var(--shell-bg); }
+.app-i24, .app-i20, .app-i16, .app-i14, .app-close, .app-zoom, .app-revtext, .app-tbtn { color: var(--icon-secondary_icon-color); }
+.app-doc-title, .app-style, .app-save { color: var(--text-text-color); }
+.app-doc-title { font-size: var(--font-font-size-font-size_l); }
+.app-style, .app-save, .app-zoom, .app-revtext { font-size: var(--font-font-size-font-size_m); }
+.app-rmore:hover, .app-ghost:hover { background: var(--shell-hover); }
+.app-tbtn:hover, .app-tarr:hover, .app-tsplit .app-tbtn:hover,
+.app-tsplit .app-tarr:hover, .app-tsplit:has(.app-tarr:hover) .app-tbtn { background: var(--shell-hover) !important; }
+.app-rmore:hover .app-i20, .app-ghost:hover .app-i24, .app-close:hover { color: var(--icon-secondary_hover_icon-color); }
+.app-close { background: var(--shell-hover) !important; }
+.app-close:hover { background: color-mix(in srgb, var(--icon-icon-color) 10%, transparent) !important; }
+.app-zoom:hover, .app-revtext:hover { color: var(--text-secondary_text-color); }
+.app-hsep { background: color-mix(in srgb, var(--text-text-color) 8%, transparent); }
+.app-tsep { background: color-mix(in srgb, var(--text-text-color) 4%, transparent); }
+.app-style::after { background: var(--border-unaccented_border-color); }
+.app-save { border-color: var(--components-button-outlined-same-border-success_outlined-same_border-color_button) !important; background: var(--background-background-color) !important; }
+.app-save:hover { background: var(--background-success_hover_background-color) !important; }
+.app-save-ico { background: var(--background-contrast-success_color); color: var(--icon-contrast_icon-color); }
+.app-save:hover .app-save-ico { background: var(--background-contrast-success_hover_color); }
+.app-ritem .app-i24 { color: var(--icon-icon-color); }
+.app-ritem.is-accent .app-i24 { color: var(--icon-primary_hover_icon-color); }
+.app-ritem:hover { background: var(--background-unaccented_background-color) !important; }
+.app-tshadow::after { background: linear-gradient(180deg, var(--components-scroll-shadow_start-color_scroll), transparent); }
 .doc:focus { outline: none; }
-.doc h2 { margin: 32px 0 16px; font-size: 24px; line-height: 1.35; font-weight: 600; }
+.doc-title { font-size: var(--font-font-size-font-size_8xl); font-weight: var(--font-font-weight-bold); }
+.doc-text { font-size: var(--font-font-size-font-size_xl); }
+.doc h2 { margin: 32px 0 16px; font-size: var(--font-font-size-font-size_5xl); line-height: 1.35; font-weight: var(--font-font-weight-bold); }

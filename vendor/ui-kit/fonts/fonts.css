@@ -1,0 +1,35 @@
+/*!
+ * ui-kit — шрифты. Подключает прототип, если ему нужны шрифты из кита: компоненты от этого файла не зависят.
+ * Inter — текст (переменный woff2, для старых браузеров — статичные ttf), cbuc-icons и cbuc-icons24 — иконки
+ * из макетов (font-family в токенах --icon-font-family-*), Accordion-Font — иконки аккордеона.
+ * Пути относительные: файл работает и локально, и с jsDelivr.
+ */
+
+@font-face {
+  font-family: "Inter"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("Inter/Inter-roman.var.woff2") format("woff2"), url("Inter/Inter-Regular-hint.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Inter"; font-style: normal; font-weight: 500; font-display: swap;
+  src: url("Inter/Inter-roman.var.woff2") format("woff2"), url("Inter/Inter-Medium-hint.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Inter"; font-style: normal; font-weight: 600; font-display: swap;
+  src: url("Inter/Inter-roman.var.woff2") format("woff2"), url("Inter/Inter-SemiBold-hint.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Inter"; font-style: italic; font-weight: 400; font-display: swap;
+  src: url("Inter/Inter-italic.var.woff2") format("woff2"), url("Inter/Inter-Italic-hint.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Inter"; font-style: italic; font-weight: 500; font-display: swap;
+  src: url("Inter/Inter-italic.var.woff2") format("woff2"), url("Inter/Inter-MediumItalic-hint.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Inter"; font-style: italic; font-weight: 600; font-display: swap;
+  src: url("Inter/Inter-italic.var.woff2") format("woff2"), url("Inter/Inter-SemiBoldItalic-hint.ttf") format("truetype");
+}
+
+@font-face { font-family: "cbuc-icons"; font-display: block; src: url("cbuc-icons.ttf") format("truetype"); }
+@font-face { font-family: "cbuc-icons24"; font-display: block; src: url("cbuc-icons24.ttf") format("truetype"); }
+@font-face { font-family: "Accordion-Font"; font-display: block; src: url("Accordion-Font.ttf") format("truetype"); }
