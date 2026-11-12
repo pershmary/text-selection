@@ -1,0 +1,1111 @@
+/* Layout: страница редактора — колонка документа 820px по центру, как во фрейме «Шаг 1».
+   Тема намеренно одна (светлая), чтобы демо совпадало с макетом. */
+:root {
+  color-scheme: light;
+  --page-bg: #ffffff;
+  --text: #000000;
+  --border: #d2d6da;            /* border/unaccented_border-color */
+  --header-bg: #f8f8f8;         /* background/unaccented_background-color */
+  --group-bg: #f3f5f7;
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  --tracking: -0.2256px;
+  --doc-width: 820px;
+  --first-col: 235px;
+  --accent: #7b62f8;            /* Border/info_border-color */
+  --selection-bg: rgba(123, 98, 248, .2); /* info_border-color 20% */
+  --on-accent: #ffffff;         /* Icon/contrast_icon-color */
+  --btn-dot-bg: #ffffff;        /* Background/background-color */
+  --handle-bg: #eaeaea;         /* Border/border-color */
+  --handle-dots: rgba(255, 255, 255, .7); /* Background/Opacity/translucent_active_background-color_light */
+  --drag-tint: rgba(123, 98, 248, .08);   /* подсветка перетаскиваемой строки/столбца */
+  /* Тулбар (компонент «Тулбар ячейки мини» и «Кнопка тулбара» в Figma) */
+  --tb-bg: #f8f7ff;                       /* Background/info_background-color */
+  --tb-border: rgba(123, 98, 248, .2);
+  --tb-shadow: rgba(0, 0, 0, .06);        /* color/shadow-color_c, blur 8 */
+  --tb-btn-hover: #eeebff;                /* Background/info_hover_background-color */
+  --tb-btn-active: #e1dbff;               /* Background/info_active_background-color */
+  --icon-secondary: #656c87;              /* Icon/secondary_icon-color */
+  --icon-info: #5a49ab;                   /* Icon/info_icon-color */
+  --icon-danger: #c2140a;                 /* Icon/danger_icon-color */
+  /* Окна (Figma «Окно Фона») */
+  --win-bg: #f3f5f7;                      /* Background/contrast_background-color */
+  --win-shadow: rgba(0, 0, 0, .12);
+  --success: #12a12c;                     /* Background/Contrast/success_color */
+  --btn-shadow: rgba(0, 0, 0, .1);        /* color/shadow-color_d */
+  --icon-readonly: #cccccc;               /* Icon/readonly_icon-color */
+  --icon-unaccented: #cccccc;             /* Icon/unaccented_icon-color */
+  --text-secondary: #313e78;              /* Text/secondary_text-color */
+  --accent-50: #bdb1fc;   /* активный хэндлер в покое: Border/info_border-color с opacity 50% на белом.
+                             Сплошной цвет, чтобы линии таблицы не просвечивали сквозь хэндлер */
+}
+
+body {
+  background: var(--page-bg);
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  padding-inline: 24px;         /* не меньше выноса маркера таблицы слева */
+  padding-block: 0 28px;
+}
+
+.doc {
+  max-width: var(--doc-width);
+  margin: 0 auto;
+}
+
+.doc-title {
+  margin: 0;
+  padding-block: 60px 32px;
+  font-size: 36px;
+  line-height: 46px;
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+/* Пустая строка на месте удалённой таблицы (Figma 1049:22925): высота 32 (поля 4px), курсор ввода #333 слева,
+   справа быстрые кнопки 24×24 (скругление 4, иконки cbuc-icons 16, #8991a9 60%) через 6px. Видна, только пока таблицы нет. */
+.doc-empty { display: none; align-items: center; gap: 16px; height: 32px; padding: 4px 0; box-sizing: border-box; }
+.table-widget[hidden] ~ .doc-empty { display: flex; }
+.doc-empty-line { flex: 1; min-width: 0; height: 24px; padding-left: 2px; font-size: 16px; line-height: 24px; letter-spacing: var(--tracking); caret-color: #333; outline: none; white-space: nowrap; overflow: hidden; }
+.doc-quick { display: flex; gap: 6px; flex: none; }
+.doc-qbtn { width: 24px; height: 24px; padding: 0; border: 0; border-radius: 4px; background: transparent; cursor: pointer; font-family: "cbuc-icons"; font-size: 16px; line-height: 16px; color: rgba(137,145,169,.6); display: grid; place-items: center; }
+.doc-qbtn:hover { background: rgba(51,51,51,.05); }
+/* Окно создания таблицы (Figma 1049:23826): по стрелке у кнопки «Таблица» верхнего тулбара. 150×173, белое, скругление 12,
+   тени 0 0 15 / 0 0 46 rgba(0,0,0,.12), поля 4 4 8 4; сетка 6×6 ячеек 16×16 через 6px в белой панели (поля 8, скругление 8);
+   ячейка #f8f8f8 с обводкой 1px #eaeaea снаружи, скругление 2; выбранные — #eeebff с обводкой #7b62f8; подпись «столбцы×строки». */
+.tw-create { position: fixed; z-index: 40; width: max-content; box-sizing: border-box; padding: 4px 4px 8px; display: flex; flex-direction: column; gap: 2px;
+  background: #fff; border-radius: 12px; box-shadow: 0 0 15px rgba(0,0,0,.12), 0 0 46px rgba(0,0,0,.12); font-family: var(--font); }
+.tw-create[hidden] { display: none; }
+.tw-create-grid { padding: 8px; border-radius: 8px; background: #fff; display: grid; grid-template-columns: repeat(var(--cols, 6), 16px); gap: 6px; }
+.tw-create-cell[hidden] { display: none; }
+/* Окно «Разделение ячейки» (Figma 2598:221736): по центру экрана. 300px, фон #f8f8f8, скругление 12, тени 0 0 15 / 0 0 46 rgba(0,0,0,.12).
+   Шапка 44 (поля 10 8 0 12): заголовок Inter 16/22 #8991a9; справа зелёная галка 24 и крестик 24 через 12px.
+   Тело (поля 0 4 4): белая панель (скругление 8, поля 8 12, промежуток 10) — строки «Столбцы» / «Строки»: метка 61px #8991a9,
+   поле 30px с линией #d2d6da, кнопки − / + (24, круг #333333 5%, иконки cbuc-icons 14 #656c87) через 4px; между частями 8px. */
+.tw-split { position: fixed; z-index: 50; width: 300px; box-sizing: border-box; background: #f8f8f8; border-radius: 12px;
+  box-shadow: 0 0 15px rgba(0,0,0,.12), 0 0 46px rgba(0,0,0,.12); font-family: var(--font); }
+.tw-split[hidden] { display: none; }
+/* Затемнение под окном «Разделение ячейки»: #000 10% на весь экран */
+.tw-split-dim { position: fixed; inset: 0; z-index: 49; background: rgba(0,0,0,.1); }
+.tw-split-dim[hidden] { display: none; }
+.tw-split-head { height: 44px; box-sizing: border-box; padding: 10px 8px 0 12px; display: flex; align-items: flex-start; justify-content: space-between; }
+.tw-split-title { font-size: 16px; line-height: 22px; color: #8991a9; letter-spacing: -0.2256px; }
+.tw-split-cmds { display: flex; align-items: center; gap: 12px; }
+.tw-split-cmds button { width: 24px; height: 24px; padding: 0; border: 0; border-radius: 100px; background: transparent; cursor: pointer; display: grid; place-items: center; }
+.tw-split-done { background: #12a12c !important; box-shadow: 0 0 6px rgba(0,0,0,.1); color: #fff; font-family: "cbuc-icons"; font-size: 16px; line-height: 17px; }
+.tw-split-done:hover { background: #128c29 !important; }   /* ховер — как у галки в окнах настроек (.twin-done) */
+.tw-split-close { color: #656c87; }
+/* Ховер крестика (Figma 2598:221744, closeButton linkButton): фона нет, крестик становится #1e5391 */
+.tw-split-close:hover { background: transparent !important; color: #1e5391; }
+.tw-split-body { padding: 0 4px 4px; }
+.tw-split-panel { background: #fff; border-radius: 8px; padding: 8px 12px; display: flex; flex-direction: column; gap: 10px; }
+.tw-split-row { height: 24px; display: flex; align-items: center; gap: 8px; }
+.tw-split-label { width: 61px; flex: none; font-size: 14px; line-height: 17px; color: #8991a9; letter-spacing: -0.1974px; }
+.tw-split-input { width: 30px; height: 24px; box-sizing: border-box; padding: 4px 0 1px; border: 0; border-bottom: 1px solid #d2d6da; border-radius: 0; background: transparent;
+  font-family: var(--font); font-size: 14px; line-height: 17px; color: #000; outline: none; }
+.tw-split-btns { display: flex; gap: 4px; }
+.tw-split-btns button { width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: rgba(51,51,51,.05); cursor: pointer; display: grid; place-items: center;
+  font-family: "cbuc-icons"; font-size: 14px; line-height: 15px; color: #656c87; }
+/* Ховер (Figma 2598:221753): появляется обводка 1px #d0d0d0 внутри; фон #333333 5% и иконка #656c87 не меняются */
+.tw-split-btns button:hover { background: rgba(51,51,51,.05); color: #656c87; box-shadow: inset 0 0 0 1px #d0d0d0; }
+/* Палитра виджетов (Figma 1154:71273): 220px, белая, скругление 8, тень 0 0 18px rgba(0,0,0,.12), поля 4px сверху и снизу.
+   Пункт 32px (поля 4 8, промежуток 4): иконка cbuc-icons 16 #8991a9 в квадрате 24, подпись Inter 14 #000; у «Таблицы» стрелка #656c87.
+   Активный пункт — метка 3×16 #cc3d00 (скругление 4) у левого края. */
+.doc-empty { position: relative; }
+.doc-palette { position: absolute; z-index: 30; left: 0; top: 28px; width: 220px; padding: 4px 0; box-sizing: border-box; background: #fff; border-radius: 8px; box-shadow: 0 0 18px rgba(0,0,0,.12); font-family: var(--font); }
+.doc-palette[hidden] { display: none; }
+.doc-pal-item { position: relative; height: 32px; padding: 4px 8px; box-sizing: border-box; display: flex; align-items: center; gap: 4px; cursor: pointer; }
+.doc-pal-ico { width: 24px; height: 24px; flex: none; display: grid; place-items: center; font-family: "cbuc-icons"; font-size: 16px; line-height: 17px; color: #8991a9; }
+.doc-pal-text { flex: 1; min-width: 0; font-size: 14px; line-height: 17px; letter-spacing: -0.1974px; color: #000; white-space: nowrap; }
+.doc-pal-sub { flex: none; width: 16px; font-family: "cbuc-icons"; font-size: 16px; line-height: 17px; color: #656c87; text-align: center; }
+.doc-pal-item:hover { background: #f3f4f8; }   /* ховер — как у пунктов меню */
+.doc-pal-item.is-active::before { content: ""; position: absolute; left: 0; top: 8px; width: 3px; height: 16px; border-radius: 4px; background: #cc3d00; }
+.tw-create-cell { width: 16px; height: 16px; padding: 0; border: 0; border-radius: 2px; background: #f8f8f8; box-shadow: 0 0 0 1px #eaeaea; cursor: pointer; }
+.tw-create-cell.is-on { background: #eeebff; box-shadow: 0 0 0 1px #7b62f8; }
+.tw-create-size { height: 17px; font-size: 14px; line-height: 17px; color: #656c87; text-align: center; }
+.app-tsplit .app-tarr[aria-expanded="true"] { background: rgba(51,51,51,.05) !important; }
+/* Кнопка «Заполнить таблицу» (Figma 1496:136998): белая, обводка 1px #8cd9d9 внутри, скругление 4, поля 8, Inter 14 #000.
+   На 28px ниже таблицы (у блока таблицы снизу 12px поля → ещё 16px), центр кнопки — по вертикальной оси экрана. */
+.tw-filldemo { display: none; margin-top: 16px; height: 33px; position: relative; }
+.tw-filldemo.is-on { display: block; }
+.tw-filldemo-btn { position: absolute; top: 0; left: 0; height: 33px; padding: 8px; box-sizing: border-box; border: 1px solid #8cd9d9; border-radius: 4px; background: #fff; font-family: var(--font); font-size: 14px; line-height: 17px; color: #000; white-space: nowrap; cursor: pointer; }
+
+.doc-text {
+  margin: 0;
+  padding-bottom: 4px;
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: var(--tracking);
+}
+
+/* ---------- Окружение страницы (Figma 1265:76984): шапка, левый и правый сайдбары, верхний тулбар ---------- */
+html, body { margin: 0; }
+body { background: #eae9ee; }
+.app-i24 { font-family: "cbuc-icons24"; font-size: 24px; line-height: 24px; width: 24px; height: 24px; display: block; text-align: center; color: #656c87; }
+.app-i20 { font-family: "cbuc-icons"; font-size: 20px; line-height: 20px; width: 20px; height: 20px; display: block; text-align: center; color: #656c87; }
+.app-i16 { font-family: "cbuc-icons"; font-size: 16px; line-height: 17px; width: 16px; height: 17px; display: block; text-align: center; color: #656c87; }
+.app-i14 { font-family: "cbuc-icons"; font-size: 14px; line-height: 15px; width: 14px; height: 15px; display: block; text-align: center; color: #656c87; }
+.app-head button, .app-toolbar button, .app-right button { border: 0; padding: 0; background: none; cursor: pointer; font-family: var(--font); }
+/* Шапка: 44px, фон #eae9ee; слева значок документа и название, справа команды */
+.app-head { position: fixed; z-index: 20; top: 0; left: 0; right: 0; height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px 0 20px; box-sizing: border-box; background: #eae9ee; }
+.app-head-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.app-head-left svg { flex: none; display: block; }
+.app-doc-title { font-size: 15px; line-height: 18px; color: #000; white-space: nowrap; }
+.app-head-right { display: flex; align-items: center; gap: 6px; }
+.app-ghost { width: 32px; height: 32px; border-radius: 100px; display: grid; place-items: center; }
+/* Крестик шапки (Figma 4081:172991): в покое круг #333333 5%, иконка #656c87; ховер — круг #333333 10%, иконка #1e5391 */
+.app-close { color: #656c87; }
+.app-close:hover { background: rgba(51,51,51,.1) !important; color: #1e5391; }
+/* Круглая ghost-кнопка — один компонент (три точки в правом сайдбаре, Figma 4081:170037, и круглые кнопки шапки):
+   ховер — круг #333333 5%, иконка #1e5391 */
+.app-rmore:hover, .app-ghost:hover { background: rgba(51,51,51,.05); }
+.app-rmore:hover .app-i20, .app-ghost:hover .app-i24 { color: #1e5391; }
+.app-ghost .app-i24 { position: relative; top: -1px; }
+.app-hsep { width: 1px; height: 24px; margin: 0 6px; background: rgba(0,0,0,.08); flex: none; }
+.app-zoom { height: 24px; font-size: 14px; color: #656c87; letter-spacing: -0.1974px; }
+/* Кнопка-ссылка «100%» (Figma 4081:172974): ховер — текст #313e78 с подчёркиванием, без фона */
+.app-zoom:hover, .app-revtext:hover { color: #313e78; text-decoration: underline; background: none !important; }   /* кнопка с датой — тот же компонент */
+.app-cmds { display: flex; align-items: center; gap: 12px; padding-left: 4px; }
+.app-rev { display: flex; align-items: center; gap: 6px; }
+.app-rev svg { display: block; flex: none; }
+/* Фото пользователя (Figma 4081:173135): 24×24, скругление 2, картинка заполняет квадрат */
+.app-avatar { display: block; flex: none; width: 24px; height: 24px; border-radius: 2px; object-fit: cover; }
+.app-revtext { height: 24px; font-size: 14px; color: #656c87; letter-spacing: -0.1974px; white-space: nowrap; }
+/* Кнопка «Сохранить» — двойная кнопка (Figma RXao8Os01blfLeZ4xU9rYM 17654:127765, success, mt): 116×26, белая, обводка 1px #12a12c 35% внутри,
+   скругление 100; слева подпись Inter 14 #000 (поля 0 6 0 12), справа зелёный круг 26px #12a12c с белой галкой U+E75E 16px. */
+.app-save { display: flex; align-items: center; height: 26px; padding: 0 !important; border: 1px solid rgba(18,161,44,.35) !important; border-radius: 100px; background: #fff !important; box-sizing: border-box; font-size: 14px; color: #000; letter-spacing: -0.1974px; margin-right: 4px; overflow: hidden; }
+.app-save-text { position: relative; top: -1px; padding: 0 6px 0 11px; }   /* 12px от края кнопки (с обводкой); подпись на 1px выше (по правке пользователя) */
+.app-save:hover { background: #eefbf0 !important; }
+.app-save-ico { flex: none; width: 26px; height: 26px; margin: -1px -1px -1px 0; border-radius: 100px; background: #12a12c; color: #fff; display: grid; place-items: center;
+  font-family: "cbuc-icons"; font-size: 16px; line-height: 17px; letter-spacing: 0; }
+.app-save:hover .app-save-ico { background: #128c29; }   /* ховер круга — как у зелёной галки в окнах */
+.app-close { width: 32px; height: 32px; border-radius: 100px; background: rgba(51,51,51,.05) !important; display: grid; place-items: center; }
+.app-close svg { display: block; }
+/* Левый сайдбар 52px — пустой, правый 54px — пункты панели и помощь */
+.app-left { position: fixed; z-index: 5; top: 44px; left: 0; bottom: 0; width: 52px; background: #eae9ee; }
+.app-right { position: fixed; z-index: 5; top: 44px; right: 0; bottom: 0; width: 54px; padding: 0 4px 8px 6px; box-sizing: border-box; background: #eae9ee; display: flex; flex-direction: column; justify-content: space-between; align-items: center; }
+.app-rcmds { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.app-ritem { width: 44px; height: 48px; border-radius: 8px; display: grid; place-items: center; }
+.app-ritem:hover { background: #f9f9f9 !important; }   /* Figma 4081:170027: ховер крупных боковых кнопок — #f9f9f9, скругление 8 */
+.app-ritem .app-i24 { color: #333; position: relative; top: -1px; }
+.app-ritem.is-accent .app-i24 { color: #db4200; }
+.app-rmore { width: 32px; height: 32px; margin-top: 10px; border-radius: 100px; display: grid; place-items: center; }
+.app-help { width: 32px; height: 32px; border-radius: 16px; }
+.app-help svg { display: block; }
+/* Центр: верхний тулбар (40px, #f8f8f8, скругление сверху 8px) и белая область документа */
+.app-body { padding: 44px 54px 0 52px; }
+.app-center { position: relative; min-height: calc(100vh - 44px); background: #fff; border-radius: 8px 8px 0 0; }
+.app-toolbar { position: sticky; z-index: 19; top: 44px; height: 40px; display: flex; align-items: center; padding: 0 2px 0 16px; box-sizing: border-box; background: #f8f8f8; border-radius: 8px 8px 0 0; overflow: hidden; white-space: nowrap; box-shadow: 0 -8px 0 0 #eae9ee; }
+/* Страница прокручена — под верхним тулбаром тень 8px (как у остальных теней скролла: rgba(0,0,0,.15) к прозрачному) */
+/* z-index 5: поверх таблицы, но под плавающими тулбарами (6), окнами (7) и окном расширенного режима (8) — на них тень не ложится */
+.app-tshadow { position: sticky; z-index: 5; top: 84px; height: 0; pointer-events: none; }
+.app-tshadow::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 8px; background: linear-gradient(180deg, rgba(0,0,0,.15), rgba(0,0,0,0));
+  opacity: 0; transition: opacity .1s ease-out; }
+html.app-scrolled .app-tshadow::after { opacity: 1; }
+.app-tgroup { display: flex; align-items: center; gap: 10px; flex: none; }
+.app-tbtn { width: 32px; height: 32px; border-radius: 4px; display: grid; place-items: center; flex: none; color: #656c87; }
+.app-tbtn:hover, .app-tarr:hover { background: rgba(51,51,51,.05) !important; }   /* ховер кнопок верхнего тулбара — #333333 5% */   /* у дропдауна стиля текста ховера нет */
+.app-tbtn svg { display: block; }
+.app-tbtn .app-i24 { position: relative; top: -1px; }
+.app-tsep { width: 1px; height: 24px; margin: 0 8px; background: rgba(0,0,0,.04); flex: none; }
+.app-tsplit { display: flex; align-items: center; gap: 2px; }
+/* Двойная кнопка «Таблица» (Figma 1049:23370 / 1049:23371): ховер на иконке — подсвечена только она;
+   ховер на стрелке — подсвечены обе части. Цвет ховера #333333 5%. */
+.app-tsplit .app-tbtn:hover, .app-tsplit .app-tarr:hover,
+.app-tsplit:has(.app-tarr:hover) .app-tbtn { background: rgba(51,51,51,.05) !important; }
+.app-tarr { width: 14px; height: 32px; border-radius: 4px; display: grid; place-items: center; }
+.app-style { position: relative; width: 150px; height: 28px; display: flex; align-items: center; justify-content: space-between; border-radius: 4px; font-size: 14px; color: #000; letter-spacing: -0.1974px; flex: none; text-align: left; }
+.app-style::after { content: ""; position: absolute; left: 0; right: 0; bottom: 4px; height: 1px; background: #d2d6da; }
+.app-style .app-i16 { margin-top: 0; }
+/* Текст дропдауна — как в макете (Figma 1579:187488): низ букв на 4px выше линии */
+.app-style > span:first-child { position: relative; top: -1px; }
+
+/* ---------- Виджет «Таблица» ---------- */
+.table-widget {
+  padding-block: 12px;
+}
+
+/* Поле вокруг таблицы под маркер и кнопки на углах.
+   Без своей прокрутки: широкая таблица честно выходит за колонку документа вправо. */
+.table-scroll {
+  overflow: visible;
+  margin: -24px -12px -12px -24px;
+  padding: 24px 12px 12px 24px;
+}
+
+.tw-wrap {
+  position: relative;
+  min-width: 560px;
+}
+
+/* ---------- Кнопка «Плюс» на углу ячейки (24×24, центр — точка пересечения линий) ---------- */
+.tw-add {
+  position: absolute;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.tw-add[hidden] { display: none; }
+.tw-add { z-index: 5; }   /* плюсы — поверх хэндлеров «Ухо» */
+
+/* hover=false: маленький кружок 5×5, обводка 1px снаружи Border/info_border-color (всего 7px) */
+.tw-add::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  box-sizing: content-box;
+  border-radius: 50%;
+  background: var(--btn-dot-bg);
+  border: 1px solid var(--accent);
+  grid-area: 1 / 1;
+  transition: width .12s ease, height .12s ease, background-color .12s ease, border-color .12s ease;
+}
+
+/* Плюс — символ U+E95D из иконочного шрифта cbuc-icons, 14px, белый */
+.tw-add .tw-icon {
+  grid-area: 1 / 1;
+  width: 14px;
+  height: 14px;
+  font-size: 14px;
+  line-height: 14px;            /* символ в шрифте отцентрован в своём em-квадрате */
+  text-align: center;
+  color: var(--on-accent);
+  opacity: 0;
+  transition: opacity .12s ease;
+}
+
+/* hover=true: круг 16px с плюсом */
+.tw-add:hover::before,
+.tw-add:focus-visible::before {
+  width: 14px;                  /* + обводка 1px = круг 16px */
+  height: 14px;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.tw-add:hover .tw-icon,
+.tw-add:focus-visible .tw-icon { opacity: 1; }
+.tw-add:focus-visible { outline: none; }
+
+/* ---------- Хэндлеры строки и столбца — «Ухо» (Figma 3783:162936, компонент «Хэндлер столбца», Форма=Ухо) ----------
+   Столбец: над столбцом, по центру, нижний край — по внешнему краю верхней линии таблицы.
+     Зона наведения 48×10. Покой — плашка 40×6 по низу зоны, скругление сверху 4px, #7b62f8 25%.
+     Ховер (и перетаскивание) — плашка 48×10, скругление сверху 6px, #7b62f8 50%, три точки 2×2 белые 70% в ряд через 2px.
+   Строка — то же, повёрнутое: слева от строки, по центру, правый край — по внешнему краю левой линии; точки — столбиком.
+   Цвета — полупрозрачные, как в макете (хэндлер стоит снаружи таблицы, линии под ним нет). */
+.tw-handle {
+  position: absolute;
+  z-index: 3;
+  box-sizing: border-box;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: grab;
+  display: flex;
+}
+.tw-handle[hidden] { display: none; }
+.tw-handle-body {
+  box-sizing: border-box;
+  background: rgba(123, 98, 248, .25);   /* Border/info_border-color 25% */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tw-handle svg { display: block; opacity: 0; }
+.tw-handle--col { width: 48px; height: 10px; transform: translate(-50%, -100%); margin-top: -0.5px; padding: 4px 4px 0; align-items: flex-end; }
+.tw-handle--col .tw-handle-body { width: 40px; height: 6px; border-radius: 4px 4px 0 0; }
+.tw-handle--col svg { width: 10px; height: 2px; }
+.tw-handle:not(.tw-handle--col) { width: 10px; height: 48px; transform: translate(-100%, -50%); margin-left: -0.5px; padding: 6px 0 6px 4px; justify-content: flex-end; }
+.tw-handle:not(.tw-handle--col) .tw-handle-body { width: 6px; height: 100%; border-radius: 4px 0 0 4px; }   /* высота зоны задаётся скриптом: высота строки */
+.tw-handle:not(.tw-handle--col) svg { width: 2px; height: 10px; }
+/* Ховер и перетаскивание: плашка во всю зону, точки видны */
+.tw-handle:hover, .tw-handle:focus-visible, .tw-handle.is-dragging { padding: 0; }
+.tw-handle--col:hover .tw-handle-body, .tw-handle--col:focus-visible .tw-handle-body, .tw-handle--col.is-dragging .tw-handle-body { width: 48px; height: 10px; border-radius: 6px 6px 0 0; }
+.tw-handle:not(.tw-handle--col):hover .tw-handle-body, .tw-handle:not(.tw-handle--col):focus-visible .tw-handle-body, .tw-handle:not(.tw-handle--col).is-dragging .tw-handle-body { width: 10px; height: 100%; border-radius: 6px 0 0 6px; }
+.tw-handle:hover .tw-handle-body, .tw-handle:focus-visible .tw-handle-body, .tw-handle.is-dragging .tw-handle-body { background: rgba(123, 98, 248, .5); }   /* Border/info_border-color 50% */
+.tw-handle:hover svg, .tw-handle:focus-visible svg, .tw-handle.is-dragging svg { opacity: 1; }
+.tw-handle:focus-visible { outline: none; }
+.twin:focus { outline: none; }   /* окно получает фокус, когда прячется поле с фокусом (редактор «Границы») */
+/* Ховер — плавно: ease-out, 100 мс (размер плашки, скругление, цвет, точки) */
+.tw-handle { transition: padding .1s ease-out; }
+.tw-handle-body { transition: width .1s ease-out, height .1s ease-out, border-radius .1s ease-out, background-color .1s ease-out; }
+.tw-handle svg { transition: opacity .1s ease-out; }
+@media (prefers-reduced-motion: reduce) { .tw-handle, .tw-handle-body, .tw-handle svg { transition: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .tw-add::before, .tw-add .tw-icon { transition: none; }
+}
+
+.tw {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: var(--tracking);
+}
+
+.tw col.c1 { width: var(--first-col); }
+
+.tw td,
+.tw th {
+  padding: 8px;
+  text-align: left;
+  vertical-align: top;
+  font-weight: 400;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;        /* переносы строк, введённые Enter, сохраняются */
+  cursor: text;
+  caret-color: var(--text);
+  outline: none;                /* отдельного состояния фокуса ячейки в макете пока нет */
+}
+
+/* Пустая ячейка с курсором — плейсхолдер «Введите текст» (цвет placeholder-color_inputText) */
+.tw td.is-ph, .tw th.is-ph { position: relative; }
+.tw td.is-ph::before, .tw th.is-ph::before { content: "Введите текст"; position: absolute; left: 8px; top: 8px; right: 8px;
+  color: rgba(137,145,169,.6); font-weight: 400; pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* везде обычного начертания, и в заглавных */
+/* Крайние ячейки помечает скрипт (edge-r / edge-b), с учётом объединённых ячеек */
+.tw .edge-r { border-right: 0; }
+.tw .edge-b { border-bottom: 0; }
+
+/* Строка заголовка */
+.tw thead th {
+  background: var(--tw-hrow-bg, var(--header-bg));
+  font-weight: 600;
+}
+.tw .edge-t.edge-l { border-top-left-radius: 3px; }
+.tw .edge-t.edge-r { border-top-right-radius: 3px; }
+.tw .edge-b.edge-l { border-bottom-left-radius: 3px; }
+.tw .edge-b.edge-r { border-bottom-right-radius: 3px; }
+
+/* Заглавная строка / заглавный столбец: включено — фон #f8f8f8 и полужирный текст; выключено — оформление по умолчанию.
+   Классы ставит скрипт по состоянию в стиле таблицы (--tw-hrow / --tw-hcol). Своя заливка ячейки (окно «Фон») важнее. */
+.tw.tw-hrow-off thead th { background: transparent; font-weight: 400; }
+.tw.tw-hcol-on tr:not(.group) > .edge-l { background: var(--tw-hcol-bg, var(--header-bg)); font-weight: 600; }
+/* Таблица в скролле: заглавный столбец залипает у левого края видимой части (сдвиг = прокрутка),
+   лежит поверх остальных ячеек; фон непрозрачный (цвет заглавного столбца поверх белого). */
+.table-widget.is-hscroll .tw.tw-hcol-on tr:not(.group) > .edge-l { position: relative; z-index: 2; transform: translateX(var(--tw-scroll, 0px));
+  background: linear-gradient(var(--tw-hcol-bg, var(--header-bg)), var(--tw-hcol-bg, var(--header-bg))), #fff; }
+/* Залипание заглавной строки при скролле страницы: сдвиг по вертикали --tw-sy (считает скрипт). Поверх остальных ячеек, фон непрозрачный.
+   Угловая ячейка (заглавная строка + залипший заглавный столбец) сдвигается по обеим осям. */
+.table-widget.is-vstick .tw:not(.tw-hrow-off) thead th { position: relative; z-index: 3; transform: translateY(var(--tw-sy, 0px));
+  background: linear-gradient(var(--tw-hrow-bg, var(--header-bg)), var(--tw-hrow-bg, var(--header-bg))), #fff; }
+.table-widget.is-vstick.is-hscroll .tw.tw-hcol-on:not(.tw-hrow-off) thead th.edge-l { z-index: 4; transform: translate(var(--tw-scroll, 0px), var(--tw-sy, 0px)); }
+
+/* Строка-группа («Общее», «Смайлы и иконки»): одна ячейка, объединённая на все столбцы */
+.tw tr.group > td, .tw tr.group > th {
+  background: var(--group-bg);
+  font-weight: 600;
+}
+
+/* ---------- Главный маркер таблицы: квадрат слева сверху, виден при наведении на таблицу ---------- */
+/* Видимая область маркера 24×24: справа у левого края таблицы, низ на 4px ниже её верха
+   (центр маркера — 12px левее и 8px выше угла таблицы).
+   Зона клика больше — 28×32: от края поля слева и сверху до 4px внутрь таблицы,
+   и она лежит поверх соседних кнопок и хэндлера,
+   чтобы в маркер не нужно было целиться. Маркер есть всегда, но прозрачен, пока курсор не над таблицей:
+   так он ловится и при подходе к таблице снаружи. */
+.tw-marker {
+  position: absolute;
+  z-index: 5;
+  left: -24px;
+  top: -24px;
+  width: 28px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  display: block;
+  opacity: 0;
+  transition: opacity .12s ease;
+}
+.tw-wrap:hover > .tw-marker { opacity: 1; }
+html.tw-dragging .tw-marker { visibility: hidden; }
+.tw-marker { display: none !important; }   /* кнопка выделения всех ячеек убрана (по правке пользователя) */
+/* Вид — кнопка «Главный маркер» (Figma 3231:290390 / 3231:290392): иконка-стрелки cbuc-icons U+E63E без подложки;
+   по умолчанию 12px #ccc, при наведении 16px #7b62f8. Центр — 12px левее и 8px выше угла таблицы. */
+.tw-marker::before {
+  content: "\e63e";
+  position: absolute;
+  left: 12px;
+  top: 16px;
+  transform: translate(-50%, -50%);
+  font-family: "cbuc-icons";
+  font-size: 12px;
+  line-height: 1;
+  color: #ccc;
+  transition: font-size .12s ease, color .12s ease;
+}
+.tw-marker:hover::before {
+  font-size: 16px;
+  color: #7b62f8;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tw-marker, .tw-marker::before { transition: none; }
+}
+
+/* ---------- Иконочные шрифты из макета (встроены в страницу) ----------
+   cbuc-icons — иконки 16px-сетки (в Figma: ICONS/icon-size_xs и др.), cbuc-icons24 — 24px-сетка.
+   Символ берётся по коду из Figma, например \uE95D — плюс. */
+.tw-icon {
+  font-family: "cbuc-icons";
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1;
+  speak: never;
+  -webkit-font-smoothing: antialiased;
+}
+.tw-icon--24 { font-family: "cbuc-icons24"; }
+
+/* ---------- Компонент тулбара ----------
+   Контейнер: фон #f8f7ff, обводка 1px accent 20%, скругление 14, отступ 2, промежуток между кнопками 2,
+   тень 0 0 8px rgba(0,0,0,.06).
+   Кнопка 32×32: отступ 4, скругление 12, иконка cbuc-icons24 24px.
+   Состояния кнопки: hover — фон #eeebff; нажата (click) — фон #e1dbff, иконка #5a49ab;
+   нажата + hover — фон #eeebff, иконка #5a49ab. Необязательно: подпись 14px, стрелка ▾ (cbuc-icons 16px). */
+.tb {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--tb-bg);
+  border: 1px solid var(--tb-border);
+  border-radius: 14px;
+  box-shadow: 0 0 8px 0 var(--tb-shadow);
+  overflow: hidden;
+}
+.tb[hidden] { display: none; }
+.tb-btn[hidden] { display: none; }
+.tb-sep { flex: none; align-self: center; width: 1px; height: 20px; margin: 0 2px; border-radius: 4px; background: rgba(0,0,0,.08); }   /* кнопка, не подходящая по правилам тулбара выделения */
+.tb-btn {
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--icon-secondary);
+  font: inherit;
+  cursor: pointer;
+}
+.tb-btn:hover { background: var(--tb-btn-hover); }
+.tb-btn[aria-pressed="true"] { background: var(--tb-btn-active); color: var(--icon-info); }
+.tb-btn[aria-pressed="true"]:hover { background: var(--tb-btn-hover); }
+.tb-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.tb-btn-inner { display: flex; align-items: center; gap: 4px; height: 24px; }
+/* Символы cbuc-icons24 лежат на 0,5px ниже центра своего em-квадрата — поднимаем (в макете это pb-1px) */
+.tb-icon {
+  width: 24px;
+  height: 24px;
+  font-size: 24px;
+  line-height: 24px;
+  text-align: center;
+  position: relative;
+  top: -.5px;
+}
+.tb-icon--centered { top: 0; }            /* символ уже по центру em-квадрата (например, корзина U+EB72) */
+.tb-svg { width: 24px; height: 24px; display: block; }
+.tb-btn--danger { color: var(--icon-danger); }
+.tb-btn--danger[aria-pressed="true"] { color: var(--icon-danger); }
+/* Кнопка с подписью (как в тулбаре окна расширенного режима): иконка + 2px + Inter 12px цвета иконки */
+.tb-btn--label .tb-btn-inner { gap: 2px; }
+.tb-label { font-family: var(--font); font-size: 12px; line-height: 15px; white-space: nowrap; color: inherit; }
+.tb-text {
+  font-family: var(--font);
+  font-size: 14px;
+  letter-spacing: -0.1974px;
+  color: var(--text);
+  white-space: nowrap;
+}
+.tb-arrow {
+  padding-left: 2px;
+  display: flex;
+  color: var(--icon-secondary);
+}
+.tb-arrow .tw-icon {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+  line-height: 16px;
+  text-align: center;
+  position: relative;
+  top: -.5px;
+}
+/* Нажатая кнопка со стрелкой (открытое меню) — стрелка смотрит вверх */
+.tb-btn[aria-pressed="true"] .tb-arrow .tw-icon { transform: rotate(180deg); top: .5px; }
+
+/* ---------- Окно «Фон» (Figma «Окно Фона», node 1998:170720) ---------- */
+.twin {
+  position: absolute;
+  z-index: 7;
+  width: 366px;
+  background: var(--win-bg);
+  border-radius: 12px;
+  box-shadow: 0 0 9px 0 var(--win-shadow);
+  font-family: var(--font);
+  color: var(--text);
+}
+.twin[hidden] { display: none; }
+.twin-head { display: flex; align-items: center; min-height: 56px; }
+.twin-title { flex: 1 1 auto; padding-left: 16px; font-size: 17px; line-height: 21px; letter-spacing: -0.2397px; }
+.twin-cmds { display: flex; align-items: center; gap: 12px; padding-right: 12px; }
+.twin-cmds-group { display: flex; align-items: center; gap: 6px; }
+.twin-btn {
+  width: 28px; height: 28px; flex: none;
+  padding: 0; border: 0; border-radius: 100px;
+  background: transparent;
+  color: var(--icon-secondary);
+  display: grid; place-items: center;
+  cursor: pointer;
+}
+.twin-btn:disabled { cursor: default; }
+.twin-btn svg { display: block; }
+/* Символы шрифтов: точный квадрат; cbuc-icons 16px лежат на ~0,5px ниже центра — поднимаем */
+.twin-ico16 { font-family: "cbuc-icons"; font-size: 16px; line-height: 16px; width: 16px; height: 16px; text-align: center; position: relative; top: -.5px; }
+.twin-ico24 { font-family: "cbuc-icons24"; font-size: 24px; line-height: 24px; width: 24px; height: 24px; text-align: center; }
+.twin-reset { color: var(--icon-readonly); }
+.twin-done { background: var(--success); color: var(--on-accent); box-shadow: 0 0 3px 0 var(--btn-shadow); }
+/* Зелёная кнопка с галкой — hover (Figma 3317:148711): фон #128C29; для всех таких кнопок в демо */
+.twin-done:hover:not(:disabled) { background: #128c29; }
+.twin-close { width: 24px; height: 24px; border-radius: 0; margin-right: 8px; }
+
+.twin-body { display: flex; flex-direction: column; gap: 4px; padding: 0 4px 4px; }
+.twin-panel { background: var(--page-bg); border-radius: 8px; padding: 0 12px; }
+.twin-code { padding-block: 8px; display: flex; align-items: center; justify-content: space-between; }
+.twin-code-left { display: flex; align-items: center; gap: 6px; }
+.twin-current { width: 70px; height: 32px; box-sizing: border-box; border: 1px solid var(--border); border-radius: 18px; background: #fff; }
+.twin-code-right { display: flex; align-items: center; gap: 8px; }
+.twin-code-nums { display: flex; align-items: center; gap: 4px; }
+.twin-field {
+  position: relative;
+  height: 24px; box-sizing: border-box;
+  padding-bottom: 3px;
+  display: flex; align-items: flex-end;
+  font-size: 14px; line-height: 17px; letter-spacing: -0.1974px;
+  border-bottom: 1px solid var(--border);
+}
+.twin-hex { width: 46px; }
+.twin-hex-arrow { position: absolute; right: 0; top: 3.5px; color: var(--icon-unaccented); }
+.twin-hexcode { width: 66px; }
+.twin-opacity { display: flex; align-items: flex-end; }
+.twin-op { width: 24px; justify-content: flex-start; }   /* значение прозрачности — по левому краю своего поля */
+.twin-pct { width: 11px; height: 24px; box-sizing: border-box; padding-bottom: 3px; display: flex; align-items: flex-end; font-size: 14px; line-height: 17px; letter-spacing: -0.1974px; }
+
+.twin-swatches { display: flex; flex-wrap: wrap; gap: 8px 6px; padding-top: 12px; padding-bottom: 2px; }
+.twin-swatch {
+  position: relative;
+  width: 28px; height: 28px; padding: 0;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  cursor: pointer;
+}
+/* диагональ «без фона»: 18×22, от (5.5, 3.5) внутри кружка */
+.twin-swatch svg { position: absolute; left: 4.5px; top: 2.5px; }
+.twin-foot { padding-top: 16px; padding-bottom: 12px; display: flex; flex-direction: column; gap: 12px; }
+.twin-divider { height: 1px; margin: 0 12px; background: var(--handle-bg); }
+.twin-link {
+  height: 24px; padding: 0 0 0 2px; border: 0; background: none; align-self: flex-start;
+  font-family: var(--font); font-size: 14px; letter-spacing: -0.1974px; color: var(--text-secondary);
+  cursor: pointer;
+}
+
+/* ---------- Окно «Стиль текста» (Figma «Меню Стили», 300×132) ---------- */
+.twin--style { width: 300px; box-shadow: 0 0 23px 0 rgba(0,0,0,.12), 0 0 7.5px 0 rgba(0,0,0,.12); }
+.twin--style .twin-head { min-height: 44px; height: 44px; padding: 0 8px; gap: 12px; box-sizing: border-box; }
+.twin--style .twin-title { padding-left: 0; font-size: 16px; font-weight: 600; line-height: 20px; letter-spacing: -0.2256px; white-space: nowrap; }
+.twin--style .twin-cmds { padding-right: 0; }
+.twin--style .twin-close { margin-right: 0; }
+.twin-back { background: #fff; box-shadow: 0 0 3px 0 var(--btn-shadow); margin-right: -6px; } /* назад + заголовок: 6px между ними */
+.twin--style .twin-reset, .twin--style .twin-done { width: 24px; height: 24px; }
+.twin--style .twin-body { padding: 0 4px 4px; }
+.twin-style-panel { padding: 8px 12px; display: flex; flex-direction: column; gap: 8px; }
+.twin-style-row1 { display: flex; gap: 16px; padding-top: 4px; }
+.twin-font { flex: 1 1 auto; }
+.twin-font .twin-hex-arrow { top: 3.5px; }
+.twin-size { width: 40px; flex: none; }
+.twin-style-row2 { display: flex; align-items: center; gap: 14px; }
+.twin-fmt { display: flex; gap: 4px; }   /* B I U S — 4px между кнопками (Figma 2727:155448, «Начертание») */
+.twin-sq { width: 32px; height: 32px; border-radius: 12px; }
+.twin-sq .twin-ico24 { position: relative; top: -1px; }
+.twin-sq .twin-ico24.is-u { top: -1.5px; }
+/* B: глиф по габаритам ровно по центру, но вертикальная ножка тянет его влево на ~0,6px — оптически сдвигаем вправо */
+.twin-sq .twin-ico24.is-b { left: .5px; }
+/* B / I / U / S: состояния как у кнопки тулбара (Figma 13372:140446 hover, 13372:140453 нажата) */
+.twin-fmt .twin-sq:hover { background: var(--tb-btn-hover); }
+.twin-fmt .twin-sq[aria-pressed="true"] { background: var(--tb-btn-active); color: var(--icon-info); }
+.twin-fmt .twin-sq[aria-pressed="true"]:hover { background: var(--tb-btn-hover); }
+/* «Цвет текста» и «Цвет выделения»: hover — фон #eeebff (Figma 2963:146804, 2963:146795); кружок и маркер не меняются */
+.twin-colors .twin-sq:hover { background: var(--tb-btn-hover); }
+.twin-vdiv { width: 9px; height: 16px; flex: none; display: flex; justify-content: center; }
+.twin-vdiv::before { content: ""; width: 1px; height: 16px; background: var(--handle-bg); }
+.twin-colors { display: flex; gap: 8px; }
+.twin-textcolor { width: 20px; height: 20px; box-sizing: border-box; border-radius: 50%; background: #000; border: 1px solid var(--border); }
+
+/* ---------- Окно «Границы» (Figma «Окно настройки границ/2», node 1312:96788, 350×184) ---------- */
+/* Расширенные настройки границ внутри окон «Таблица» / «Ячейки»: вместо остального содержимого окна */
+.twin--table:not(.is-bd) > .twin-bdview { display: none; }
+.twin--table.is-bd > :not(.twin-bdview) { display: none !important; }
+.twin--borders.twin-bdview { position: relative; width: auto; box-shadow: none; background: none; }
+.twin--borders { width: 350px; overflow: visible; box-shadow: 0 0 46px 0 rgba(0,0,0,.12), 0 0 15px 0 rgba(0,0,0,.12); }
+.twin--borders .twin-head { min-height: 44px; height: 44px; padding: 0 8px 0 12px; gap: 6px; box-sizing: border-box; }
+.twin--borders .twin-title { padding-left: 6px; font-size: 16px; font-weight: 600; line-height: 20px; letter-spacing: -0.2256px; white-space: nowrap; }
+.twin--borders .twin-cmds { gap: 8px; padding-right: 0; }
+.twin--borders .twin-close { margin-right: 0; }
+.twin--borders .twin-reset, .twin--borders .twin-done { width: 24px; height: 24px; }
+/* Кнопка «Сбросить» (Figma 3311:141043): круг 28px, иконка U+E629 24px. Обычное — иконка #656C87 без фона;
+   hover — фон rgba(51,51,51,.05), иконка #1E5391; пока сбрасывать нечего — неактивна (#ccc). */
+.twin--borders > .twin-head .twin-bd-reset { width: 28px; height: 28px; border-radius: 100px; }
+.twin--borders > .twin-head .twin-bd-reset .twin-ico24 { position: relative; top: -1px; }
+.twin--borders > .twin-head .twin-bd-reset.is-active { color: var(--icon-secondary); }
+.twin--borders > .twin-head .twin-bd-reset.is-active:hover { background: rgba(51,51,51,.05); color: #1e5391; }
+/* «Сбросить» здесь — U+E629 из cbuc-icons 20px (в макете), а не из 24px-набора */
+.twin-reset20 { font-family: "cbuc-icons"; font-size: 20px; line-height: 20px; width: 20px; height: 20px; text-align: center; }
+.twin-bd-panel { padding: 12px; display: flex; gap: 12px; }
+.twin-bd-grid-box { width: 112px; flex: none; box-sizing: border-box; padding: 8px; border-radius: 6px; background: var(--header-bg); }
+.twin-bd-grid { display: grid; grid-template-columns: repeat(3, 28px); grid-template-rows: repeat(3, 28px); gap: 6px; }
+.twin-bd-grid[hidden] { display: none; }
+.twin-bd-btn { width: 28px; height: 28px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--icon-secondary); display: grid; place-items: center; cursor: pointer; }
+.twin-bd-btn svg { display: block; }
+/* Состояния — компонент «Кнопка выбора границы» (Figma 1120:46637): hover — фон #eeebff; выбрана — фон #e1dbff, иконка #5a49ab */
+.twin-bd-btn:hover { background: var(--tb-btn-hover); }
+.twin-bd-btn[aria-pressed="true"] { background: var(--tb-btn-active); color: var(--icon-info); }
+.twin-bd-btn[aria-pressed="true"]:hover { background: var(--tb-btn-hover); }
+.twin-bd-props { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.twin-bd-row { display: flex; align-items: center; gap: 8px; min-height: 24px; }
+.twin-bd-label { height: 24px; display: flex; align-items: center; font-size: 14px; letter-spacing: -0.1974px; color: #8991a9; white-space: nowrap; }
+.twin-bd-label.w60 { width: 60px; flex: none; }
+.twin-bd-line { flex: 1 1 auto; height: 24px; padding: 6px; box-sizing: border-box; border: 0; border-radius: 6px; background: var(--header-bg); display: flex; align-items: center; cursor: pointer; }
+.twin-bd-line:hover { background: #eff0f4; }
+.twin-bd-line.is-none { flex: none; height: 24px; padding: 0 0 1px; background: none; border-radius: 0; font-family: var(--font); font-size: 14px; letter-spacing: -0.1974px; color: #2562aa; }
+.twin-bd-line.is-none::before { display: none; }   /* ховер элемента выбора типа линии (Figma 3311:148708) */
+.twin-bd-line::before { content: ""; display: block; width: 100%; height: 0; border-top: 2px var(--bd-style, solid) var(--icon-secondary); }
+.twin-bd-width { padding-bottom: 3px; }
+.twin-bd-wval { flex: 1 1 auto; min-width: 0; width: 100%; padding: 0; border: 0; background: none; outline: none; font: inherit; letter-spacing: inherit; color: var(--text); }
+.twin-bd-warr { flex: none; padding: 0; border: 0; background: none; color: var(--icon-secondary); display: grid; place-items: center; cursor: pointer; }
+/* Состояния дропдауна (Figma 3311:141044): hover — линия поля #8F99A3; hover на стрелке — ещё и стрелка #1E5391 */
+.twin-bd-width:hover { border-bottom-color: #8f99a3; }
+.twin-bd-warr:hover { color: #1e5391; }
+.twin-bd-wlist .twin-mn-item { padding-right: 16px; }   /* у меню толщины справа 8px + отступ 8px (как в макете) */
+.twin-bd-color { position: relative; cursor: pointer; border: 0; font-family: var(--font); color: var(--text); padding-left: 0; }
+/* Элемент выбора цвета (Figma «Редактор выбора цвета», 3311:148698) — ховер одинаковый во всей демке:
+   с номером цвета (кружок + HEX, «бабл» r12, белый фон с лёгким радиальным градиентом) — обводка 1px #D2D6DA;
+   только кружок 24px — при наведении кружок 28px (растёт от центра, соседние элементы не сдвигаются). */
+.twin-bd-color { background: radial-gradient(circle at 48% 42%, rgba(210,214,218,0) 0, rgba(210,214,218,.15) 100%), #fff; }
+.twin-bd-color:hover { box-shadow: inset 0 0 0 1px #d2d6da; }
+.twin-ts-swatch { cursor: pointer; transition: transform .12s ease; }
+.twin-ts-swatch:hover { transform: scale(1.1667); }   /* 24 → 28px */
+/* «Без фона» — белый кружок с диагональю (как первая ячейка палитры окна «Фон») */
+.twin-bd-color.twin-ts-fillbtn.is-none { background: none; padding-right: 0; box-shadow: none; }   /* без фона — только перечёркнутый кружок, без «бабла» */
+.twin-bd-swatch.is-none { background: linear-gradient(to bottom right, #fff calc(50% - .5px), var(--border) calc(50% - .5px), var(--border) calc(50% + .5px), #fff calc(50% + .5px)); }   /* «Фон» убран — перечёркнутый кружок */
+.twin-ts-swatch.is-none { background: linear-gradient(to top right, #fff calc(50% - .5px), var(--border) calc(50% - .5px), var(--border) calc(50% + .5px), #fff calc(50% + .5px)); }
+/* Кружок цвета у заглавной строки/столбца виден, только когда переключатель включён. */
+.twin-switch[aria-checked="false"] + .twin-ts-swatch { visibility: hidden; }
+@media (prefers-reduced-motion: reduce) { .twin-ts-swatch { transition: none; } }
+/* Окно «Цвет границ» — поверх окна «Границы» (Figma 2924:153621, 366×291) */
+.twin--bdcolor { z-index: 3; box-shadow: 0 0 18px 0 rgba(0,0,0,.12); }
+/* Шапка — как у окна «Фон» (56px, заголовок 17px), не наследует шапку окна «Границы», в которое вложено */
+.twin--borders .twin--bdcolor .twin-head { min-height: 56px; height: auto; padding: 0; gap: 0; }
+.twin--borders .twin--bdcolor .twin-title { padding-left: 16px; font-size: 17px; font-weight: 400; line-height: 21px; letter-spacing: -0.2397px; }
+.twin--borders .twin--bdcolor .twin-cmds { gap: 12px; padding-right: 12px; }
+.twin--borders .twin--bdcolor .twin-close { margin-right: 8px; }
+.twin--borders .twin--bdcolor .twin-reset, .twin--borders .twin--bdcolor .twin-done { width: 28px; height: 28px; }
+/* Окно «Фон» для заглавной строки/столбца — поверх окна «Таблица», шапка как у обычного окна «Фон» */
+.twin--table .twin--bdcolor .twin-head { min-height: 56px; height: auto; padding: 0; gap: 0; }
+.twin--table .twin--bdcolor .twin-title { padding-left: 16px; font-size: 17px; font-weight: 400; line-height: 21px; letter-spacing: -0.2397px; }
+.twin--table .twin--bdcolor .twin-cmds { gap: 12px; padding-right: 12px; padding-left: 0; }
+.twin--table .twin--bdcolor .twin-close { width: 28px; height: 28px; margin-right: 8px; }
+.twin--table .twin--bdcolor .twin-reset, .twin--table .twin--bdcolor .twin-done { width: 28px; height: 28px; }
+/* Выпадающий список начертания линии (Figma «Меню начертания», 1372:89218): как меню, поля 12px сверху и снизу,
+   пункты-радио (справа 8px), центр списка — на вертикальной оси вызывающего элемента, верх — по его нижнему краю. */
+.twin-bd-list { position: absolute; z-index: 2; width: max-content; background: var(--page-bg); border-radius: 8px; box-shadow: 0 0 15px 0 rgba(0,0,0,.12), 0 0 46px 0 rgba(0,0,0,.12); padding: 12px 0; box-sizing: border-box; }
+.twin-bd-list[hidden] { display: none; }
+.twin-bd-list .twin-mn-item { padding-right: 8px; }
+.twin-bd-list .twin-mn-text { margin-right: 0; }
+.twin-bd-list .twin-mn-ico svg { top: 0; }
+.twin-bd-width { width: 48px; flex: none; justify-content: space-between; gap: 6px; }
+.twin-bd-width .twin-ico16 { color: var(--icon-secondary); }
+.twin-bd-color { display: flex; align-items: center; gap: 6px; padding-right: 12px; border-radius: 12px; background: #fff; font-size: 14px; letter-spacing: -0.1974px; }
+.twin-bd-swatch { width: 24px; height: 24px; box-sizing: border-box; border-radius: 30px; border: 1px solid var(--border); background: #d2d6da; }
+
+/* ---------- Окно «Стиль текста» → меню стилей (кнопка «Назад»; Figma «Меню с текстом», node 2273:122724, 247×362) ---------- */
+.twin-style-main[hidden], .twin-style-menu[hidden] { display: none; }
+.twin--style.is-menu { width: 247px; background: var(--page-bg); border-radius: 8px; box-shadow: 0 0 18px 0 rgba(0,0,0,.12); }
+.twin-style-menu { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.twin-menu-item {
+  position: relative; width: 231px; min-height: 40px; box-sizing: border-box;
+  padding: 8px 8px 8px 22px; border: 0; border-radius: 8px; background: var(--page-bg);
+  display: flex; align-items: center; text-align: left; color: var(--text); font-family: var(--font); cursor: pointer;
+}
+.twin-menu-item > span:first-child { display: block; min-height: 24px; line-height: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Состояния — компонент «Стиль с фоном» (Figma 2273:122253):
+   hover — фон #f3f4f8, пустой кружок-метка и кнопка со стрелкой справа; выбран — фон #eff1f5 и красная метка;
+   выбран + hover — фон #eff1f5, красная метка и стрелка. */
+.twin-menu-item:hover { background: #f3f4f8; }                    /* Background/hover_background-color */
+.twin-menu-item[aria-checked="true"] { background: #eff1f5; }     /* Background/active_background-color */
+/* Метка: кружок 8px (обводка 1px #eaeaea), центр в 14px от левого края пункта */
+.twin-menu-item::before { content: ""; position: absolute; left: 10px; top: 50%; width: 8px; height: 8px; margin-top: -4px; box-sizing: border-box; border-radius: 50%; border: 1px solid #eaeaea; background: #fff; visibility: hidden; }
+.twin-menu-item:hover::before { visibility: visible; }
+.twin-menu-item[aria-checked="true"]::before { visibility: visible; background: #cc3d00; }
+/* Стрелка справа (hover): подложка цвета пункта с растушёвкой 8px слева, кружок 24px rgba(51,51,51,.05) в 8px от правого края */
+.twin-menu-arrow { position: absolute; top: 0; right: 0; bottom: 0; width: 46px; border-radius: 0 8px 8px 0; display: none; align-items: center; justify-content: flex-end; padding-right: 8px; box-sizing: border-box;
+  background: linear-gradient(to right, rgba(243,244,248,0) 0, #f3f4f8 8px); }
+.twin-menu-item[aria-checked="true"] .twin-menu-arrow { background: linear-gradient(to right, rgba(239,241,245,0) 0, #eff1f5 8px); }
+.twin-menu-item:hover .twin-menu-arrow { display: flex; }
+.twin-menu-arrow i { width: 24px; height: 24px; border-radius: 50%; background: rgba(51,51,51,.05); display: grid; place-items: center; color: var(--icon-secondary); }
+.twin-menu-arrow svg { display: block; }
+.twin-menu-h1 { font-size: 32px; font-weight: 600; letter-spacing: -0.4512px; }
+.twin-menu-h2 { font-size: 28px; font-weight: 600; letter-spacing: -0.3948px; }
+.twin-menu-h3 { font-size: 24px; font-weight: 600; letter-spacing: -0.3384px; }
+.twin-menu-h4 { font-size: 20px; font-weight: 600; letter-spacing: -0.282px; }
+.twin-menu-h5 { font-size: 18px; font-weight: 600; letter-spacing: -0.2538px; }
+.twin-menu-body { font-size: 16px; font-weight: 400; letter-spacing: -0.2256px; }
+.twin-menu-own { font-size: 14px; font-weight: 400; letter-spacing: -0.1974px; }
+
+/* ---------- Окно «Таблица» (команда «Настроить»; Figma node 1254:66066, 350×276) ---------- */
+.twin--table { width: 350px; overflow: visible; box-shadow: 0 0 46px 0 rgba(0,0,0,.12), 0 0 15px 0 rgba(0,0,0,.12); }
+.twin--table .twin-head { min-height: 44px; height: 44px; padding: 0 8px 0 8px; gap: 2px; box-sizing: border-box; }
+.twin--table .twin-title { padding-left: 4px; font-size: 16px; font-weight: 600; line-height: 20px; letter-spacing: -0.2256px; white-space: nowrap; }
+.twin--table .twin-cmds { gap: 12px; padding: 0 0 0 10px; }
+.twin--table .twin-reset { width: 24px; height: 24px; }
+.twin--table .twin-done { width: 28px; height: 28px; }
+.twin--table .twin-close { width: 24px; height: 24px; margin-right: 0; }
+.twin-close24 { font-family: "cbuc-icons24"; font-size: 24px; line-height: 24px; width: 24px; height: 24px; text-align: center; position: relative; top: -1px; }
+.twin-ts-panel { padding: 8px 12px; display: flex; flex-direction: column; gap: 8px; }
+.twin-ts-row { position: relative; display: flex; align-items: center; gap: 8px; min-height: 24px; }
+.twin-ts-label { height: 24px; display: flex; align-items: center; font-size: 14px; letter-spacing: -0.1974px; color: #8991a9; white-space: nowrap; flex: none; }
+.twin-ts-label.w132 { width: 132px; }
+.twin-ts-label.w59 { width: 59px; }
+.twin-ts-label.w54 { width: 54px; }
+.twin-switch { width: 24px; height: 16px; padding: 0; border: 0; border-radius: 8px; background: #dbdbdb; position: relative; cursor: pointer; flex: none; }
+.twin-switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; }
+.twin-switch[aria-checked="true"] { background: #f6733c; }
+.twin-switch[aria-checked="true"]::after { left: 10px; }
+.twin-ts-swatch { width: 24px; height: 24px; box-sizing: border-box; border-radius: 100px; border: 1px solid var(--border); background: var(--header-bg); flex: none; }
+.twin-ts-link { height: 24px; display: flex; align-items: center; padding: 0; border: 0; background: none; font-family: var(--font); font-size: 14px; letter-spacing: -0.1974px; color: #2562aa; cursor: pointer; }
+.twin-ts-arrow { position: absolute; right: 0; top: 0; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 100px; background: rgba(51,51,51,.05); color: var(--icon-secondary); display: grid; place-items: center; cursor: pointer; }
+.twin-ts-arrow svg { display: block; }
+.twin-ts-editors { display: flex; align-items: center; gap: 8px; }
+.twin-ts-linetype { width: 24px; height: 24px; padding: 0 5px; border: 0; background: none; display: flex; align-items: center; cursor: pointer; }
+.twin-ts-linetype::before { content: ""; display: block; width: 100%; height: 1px; border-radius: 10px; background: var(--icon-secondary); }
+.twin-ts-num { display: flex; align-items: center; gap: 4px; }
+.twin-ts-num .twin-field { width: 40px; }
+.twin-ts-bdwidth { width: 100%; min-width: 0; height: 17px; line-height: 17px; padding: 0;   /* как текст в остальных полях: по низу поля, над линией (Figma 1364:78426) */ border: 0; background: none; outline: none; font: inherit; letter-spacing: inherit; color: var(--text); }
+.twin-ts-num .twin-field:focus-within { border-bottom-color: #8991a9; }
+.twin-ts-bdclear { padding: 0; border: 0; background: none; cursor: pointer; }
+.twin-ts-bdclear:hover { color: var(--icon-secondary); }
+.twin--table .twin-ts-row[hidden], .twin--table .twin-ts-chip[hidden] { display: none !important; }
+.twin-ts-x { font-family: "cbuc-icons"; font-size: 16px; line-height: 17px; width: 16px; height: 17px; text-align: center; color: #ccc; }
+.twin-ts-width { width: 130px; justify-content: space-between; color: rgba(137,145,169,.6); }
+.twin-ts-wval { flex: 1 1 auto; margin-right: 8px; width: 0; min-width: 0; height: 17px; line-height: 17px; padding: 0; border: 0; background: none; outline: none; font: inherit; letter-spacing: inherit; color: var(--text); }
+.twin-ts-width:focus-within { border-bottom-color: #8991a9; }
+/* Меню способов ширины (Figma 3946:166818) */
+.twin-wmenu { position: absolute; z-index: 12; width: 206px; box-sizing: border-box; padding: 12px 8px; display: flex; flex-direction: column; gap: 6px;
+  background: #fff; border-radius: 8px; box-shadow: 0 0 15px 0 rgba(0,0,0,.12), 0 0 46px 0 rgba(0,0,0,.12); }
+.twin-wmenu[hidden] { display: none; }
+.twin-wmenu-item { height: 32px; padding: 0 8px; border: 0; border-radius: 16px; background: none; display: flex; align-items: center; text-align: left; cursor: pointer;
+  font-family: var(--font); font-size: 16px; line-height: 19px; letter-spacing: -0.2256px; color: #000; }
+.twin-wmenu-item:hover { background: #f3f4f8; }
+.twin-wmenu-dot { flex: none; width: 12px; height: 12px; margin-right: 2px; display: grid; place-items: center; }
+.twin-wmenu-dot::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #cc3d00; visibility: hidden; }
+.twin-wmenu-item[aria-checked="true"] .twin-wmenu-dot::after { visibility: visible; }
+.twin-wmenu-text { padding-top: 1px; white-space: nowrap; }
+.twin-ts-wval::placeholder { color: rgba(137, 145, 169, .6); opacity: 1; }   /* Components/Input/placeholder-color_inputText — способ «заполнить» */
+.twin-ts-fill { height: 24px; box-sizing: border-box; padding: 4px 0 3px; margin-bottom: -3px; line-height: 17px; border: 0; background: none; width: auto; flex: none; margin-left: auto; text-align: right; white-space: nowrap; font-family: var(--font); font-size: 14px; letter-spacing: -0.1974px; color: #8991a9; cursor: pointer; }
+/* Вид «Ячейки» в окне «Таблица»: основной вид и вид «Ячейки» переключаются классом is-cells */
+.twin--table:not(.is-cells) > .ts-cells, .twin--table.is-cells > .ts-main { display: none !important; }
+.twin--table > .ts-cells .twin-back { margin-right: 0; }   /* «Назад» 28px + 6px до заголовка */
+.twin-ts-label.w28 { width: 28px; }
+.twin-ts-fillbtn { height: 24px; white-space: nowrap; }
+.twin-ts-fillbtn .is-muted { color: #999; }   /* «Несколько цветов» — серым (Figma 670:16506) */
+.twin-ts-fillbtn .twin-bd-hex[hidden] { display: none; }
+.twin-ts-fillbtn:has(.twin-bd-hex[hidden]) { padding-right: 0; }   /* без подписи — только кружок */
+.twin-ts-clear { width: 16px; height: 17px; margin-left: -4px; padding: 0; border: 0; background: none; cursor: pointer; font-family: "cbuc-icons"; font-size: 16px; line-height: 17px; color: #ccc; }
+.twin-ts-clear:hover { color: var(--icon-secondary); }
+.twin-ts-clear[hidden] { display: none; }
+.twin--table > .twin-body .twin-panel[hidden], .twin--table > .twin-ts-foot[hidden] { display: none !important; }
+.twin-ts-foot { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 12px 8px; }
+/* Чипсы в подвале окон настройки (Figma 3993:168871 / 3993:172489): 28px, поля 12px, белые, скругление 100, текст Inter 14 #656c87;
+   ховер — обводка 1px #d0d0d0 внутрь. */
+.twin-ts-chip { height: 28px; box-sizing: border-box; padding: 0 12px; border: 0; border-radius: 100px; background: #fff; box-shadow: none; font-family: var(--font); font-size: 14px; line-height: 17px; letter-spacing: -0.1974px; color: var(--icon-secondary); cursor: pointer; }
+.twin-ts-chip:hover { box-shadow: inset 0 0 0 1px #d0d0d0; }
+
+/* ---------- Окно «Ячейки» (команда «Настроить» в тулбарах выделения; Figma node 670:16728, 350×364) ---------- */
+/* «Шрифт» и «Основной текст»: обе по 24px высотой, базовые линии текста совпадают */
+.twin-cs-font { display: flex; align-items: baseline; gap: 8px; height: 24px; }
+.twin-cs-font b { height: 24px; line-height: 24px; font-size: 15px; font-weight: 600; letter-spacing: -0.2115px; padding: 0; }
+.twin-cs-font .twin-ts-link { display: block; height: 24px; line-height: 24px; padding: 0; }
+.twin--cells .twin-fmt { gap: 4px; }
+.twin--cells .twin-style-row1 { padding-top: 4px; }
+.twin-cs-panel2 { gap: 10px; }
+.twin-cs-label { height: 24px; display: flex; align-items: center; width: 99px; flex: none; font-size: 14px; letter-spacing: -0.1974px; color: #8991a9; white-space: nowrap; }
+.twin-cs-align-row { display: flex; align-items: flex-start; gap: 8px; }
+.twin-cs-align-row .twin-cs-label { height: 24px; display: flex; align-items: center; }
+.twin-cs-align { position: relative; width: 154px; height: 66px; border-radius: 8px; background: rgba(51,51,51,.05); }
+.twin-cs-cell { position: absolute; width: 28px; height: 20px; margin: -10px 0 0 -14px; padding: 0; border: 0; background: none; cursor: pointer; display: grid; place-items: center; }
+.twin-cs-cell::before { content: ""; width: 3px; height: 3px; border-radius: 50%; background: #ccc; }
+.twin-cs-cell[aria-checked="true"]::before { display: none; }
+.twin-cs-cell svg { display: none; }
+.twin-cs-cell[aria-checked="true"] svg { display: block; }
+/* Ховер на невыбранном варианте (Figma 3412:197734, State=Hover): вместо точки — значок варианта серым #ccc */
+.twin-cs-cell:not([aria-checked="true"]):hover::before { display: none; }
+.twin-cs-cell:not([aria-checked="true"]):hover svg { display: block; }
+.twin-cs-cell:not([aria-checked="true"]):hover svg rect { fill: #ccc; }
+.twin-cs-pad-row { position: relative; display: flex; align-items: center; gap: 8px; min-height: 24px; }
+.twin-cs-pads { display: flex; gap: 8px; }
+.twin-cs-pad { width: 56px; gap: 6px; align-items: center; padding-bottom: 0; }
+.twin-cs-pad svg { display: block; flex: none; }
+.twin-cs-padval { flex: 1 1 auto; min-width: 0; width: 100%; height: 23px; padding: 0; border: 0; background: none; outline: none; font: inherit; letter-spacing: inherit; color: var(--text); }
+.twin-cs-pad:focus-within, .twin-size:focus-within { border-bottom-color: #8991a9; }
+.twin-cs-sizeval { width: 100%; min-width: 0; height: 23px; padding: 0; border: 0; background: none; outline: none; font: inherit; letter-spacing: inherit; color: var(--text); }
+.twin-cs-toggle { position: absolute; right: 0; top: 0; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 4px; background: none; color: var(--icon-secondary); display: grid; place-items: center; cursor: pointer; }
+.twin-ts-label.w79 { width: 79px; }
+
+/* ---------- Окно расширенного режима (по клику на квадратный маркер; Figma «Окно настройки плитки», node 1720:237491) ----------
+   Окно открывается на месте таблицы: сама таблица не сдвигается, вокруг неё — рамка окна с шапкой (отступ сверху 10px, тулбар 36px, до таблицы 16px) и полями 10px. */
+.tw-window { position: relative; z-index: 8; margin: -76px -10px -10px calc(-10px + var(--tw-shift, 0px)); padding: 0 10px 10px; background: #eceaf5; border-radius: 16px; box-shadow: 0 0 8px 0 var(--tb-shadow); }
+.tw-window .tw { background: #fff; }
+.tw-window .tw-marker { display: none; }
+/* Внутри окна расширенного режима команда «Расширенный режим» не нужна */
+html.tw-in-window .twin-mn-item[data-name="Расширенный режим"] { display: none; }
+html.tw-in-window #tw-wrap > .tb, html.tw-in-window #tw-wrap > .twin { display: none !important; }
+html.tw-closing #tw-wrap > .tb { opacity: 0 !important; }   /* пока окно закрывается, плавающий тулбар появляется только через анимацию */
+/* Шапка окна расширенного режима залипает под верхним тулбаром редактора (низ тулбара — 84px) при скролле длинной таблицы
+   и уходит вместе с концом окна; фон — как у окна. */
+.tw-win-head { position: sticky; top: 84px; z-index: 10; background: #eceaf5;
+  margin-left: -10px; margin-right: -10px; padding-left: 10px; padding-right: 10px; border-radius: 16px 16px 0 0; }   /* на всю ширину окна, верхние углы скруглены как у окна */
+/* Шапка залипла — под ней тень 8px (градиент от rgba(0,0,0,.15) к прозрачному) */
+/* Залипшая шапка: под тулбаром окна остаётся 10px фона шапки (раскладка не сдвигается — столько же убираем из отступа до таблицы) */
+.tw-win-head.is-stuck { box-sizing: content-box; padding-bottom: 10px; margin-bottom: 1px; }
+/* Залипшая шапка: за её верхними углами тоже окно — закрываем уголки фоном страницы, чтобы были видны скругления 16px */
+.tw-win-head.is-stuck::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 16px; pointer-events: none;
+  /* уголки — фон страницы вместе с тенью верхнего тулбара (она лежит под окном), вырезаны маской по скруглению 16px */
+  background: linear-gradient(180deg, rgba(0,0,0,.15), rgba(0,0,0,0) 8px), #fff;
+  -webkit-mask: radial-gradient(circle at 16px 16px, transparent 15.5px, #000 16px) left top / 16px 16px no-repeat,
+                radial-gradient(circle at 0 16px, transparent 15.5px, #000 16px) right top / 16px 16px no-repeat;
+          mask: radial-gradient(circle at 16px 16px, transparent 15.5px, #000 16px) left top / 16px 16px no-repeat,
+                radial-gradient(circle at 0 16px, transparent 15.5px, #000 16px) right top / 16px 16px no-repeat; }
+.tw-win-head.is-row-stuck::after { display: none; }
+.tw-win-head.is-stuck::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 8px; pointer-events: none;
+  background: linear-gradient(180deg, rgba(0,0,0,.15), rgba(0,0,0,0)); }
+.tw-win-head { height: 55px; padding-top: 10px; margin-bottom: 11px;   /* 11px от тулбара до таблицы */ display: flex; align-items: center; justify-content: space-between; font-family: var(--font); }
+.tw-win-tools { align-self: flex-end; display: flex; align-items: center; gap: 2px; padding: 2px; border-radius: 14px; background: #f8f7ff; }   /* Figma «Тулбар в окне таблицы» */
+.tw-win-tools button, .tw-win-cmds button { border: 0; padding: 0; background: transparent; color: var(--icon-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+/* Ховер и нажатое состояние — как у кнопок плавающих тулбаров (.tb-btn) */
+.tw-win-tools button:hover:not(:disabled) { background: var(--tb-btn-hover); }
+/* Тулбар вставки столбцов (Figma 2036:183376): по ховеру на «Добавить столбец» через 0,5 с; по центру под кнопкой, на 8px ниже неё.
+   Фон #f8f7ff, скругление 14, тень 0 0 8px rgba(0,0,0,.06), поля и промежуток 2px; кнопки 32×32, скругление 12, иконка U+E952 (слева — отражённая). */
+.tw-win-pop { position: fixed; z-index: 30; display: flex; gap: 2px; padding: 2px; border-radius: 14px; }
+/* Все плавающие тулбары — по одному шаблону (как .tb): фон, обводка 1px, скругление 14, тень */
+.tw-win-pop { background: var(--tb-bg); border: 1px solid var(--tb-border); box-shadow: 0 0 8px 0 var(--tb-shadow); }
+.tw-win-pop[hidden] { display: none; }
+.tw-win-pop button { width: 32px; height: 32px; padding: 0; border: 0; border-radius: 12px; background: transparent; color: var(--icon-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.tw-win-pop button:hover { background: var(--tb-btn-hover); }
+.tw-win-pop .is-mirror { transform: scaleX(-1); }
+.tw-win-pop .is-flip { transform: scaleY(-1); top: .5px; }   /* отражение по вертикали: подъём глифа на .5px переворачивается */
+.tw-win-tools .tw-win-btn[aria-pressed="true"] { background: var(--tb-btn-active); color: var(--icon-info); }
+.tw-win-tools .tw-win-btn[aria-pressed="true"]:hover { background: var(--tb-btn-hover); }
+.tw-win-tools .tw-win-btn:disabled, .tw-win-tools .tw-win-btn[aria-pressed="true"]:disabled { background: transparent; color: var(--icon-readonly); }
+.tw-win-tools button:disabled { cursor: default; }
+.tw-win-ico { font-family: "cbuc-icons24"; font-size: 24px; line-height: 24px; width: 24px; height: 24px; text-align: center; position: relative; top: -.5px; }
+.tw-win-ico svg { display: block; }   /* векторные иконки («Объединить», «Выровнять столбцы») */
+.tw-win-dbl { display: flex; align-items: center; gap: 2px; }
+.tw-win-dbl .tw-win-main { height: 32px; padding: 4px; box-sizing: border-box; border-radius: 28px 0 0 28px; }
+.tw-win-dbl .tw-win-arr { height: 32px; padding: 2px 2px 2px 0; box-sizing: border-box; border-radius: 0 28px 28px 0; }
+.tw-win-arr span { font-family: "cbuc-icons"; font-size: 12px; line-height: 12px; width: 12px; height: 12px; text-align: center; position: relative; top: -.5px; }
+.tw-win-tools .tw-win-btn { height: 32px; padding: 0 4px; border-radius: 12px; }
+.tw-win-btn.is-readonly { color: var(--icon-readonly); }
+/* Кнопка с подписью: иконка 24 + 2px + текст Inter 12px того же цвета, что иконка */
+.tw-win-tools .tw-win-btn.has-label { gap: 2px; padding: 0 4px; }
+.tw-win-label { font-family: var(--font); font-size: 12px; line-height: 15px; white-space: nowrap; color: inherit; }
+/* Разделитель групп: 1×20, поля 2px по бокам */
+.tw-win-tools [hidden] { display: none !important; }
+.tw-win-sep { flex: none; width: 1px; height: 20px; margin: 0 2px; border-radius: 4px; background: rgba(0,0,0,.08); }
+.tw-win-btn.is-danger { color: var(--icon-danger); }
+/* Тулбар таблицы в окне (Figma 3722:267986): группы с подписью сверху (Inter 12, #656c87, по центру), кнопки 32×32 через 2px,
+   между группами — разделитель 1×41 rgba(0,0,0,.08) с полями 2px; тулбар 55px: поля 4px сверху, 2px по бокам и снизу, промежуток 4px. */
+.tw-win-tools:has(.tw-win-groups:not([hidden])) { padding: 4px 2px 2px; }
+.tw-win-groups { display: flex; align-items: stretch; gap: 4px; }
+.tw-win-grp { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.tw-win-cap { font-family: var(--font); font-size: 12px; line-height: 15px; color: var(--icon-secondary); white-space: nowrap; }
+.tw-win-grow { display: flex; align-items: center; gap: 2px; }
+.tw-win-tools .tw-win-grow .tw-win-btn { width: 32px; padding: 0; }
+.tw-win-gsep { flex: none; width: 1px; margin: 4px 2px; border-radius: 4px; background: rgba(0,0,0,.08); }
+.tw-win-right { align-self: flex-start; height: 32px; display: flex; align-items: center; gap: 6px; }   /* Figma 3722:267262: команды справа — в 10px от верха и правого края окна */
+.tw-win-cmds { display: flex; align-items: center; gap: 6px; }
+.tw-win-cmds .tw-win-round { width: 32px; height: 32px; border-radius: 100px; }
+.tw-win-cmds .tw-win-round .tw-win-ico { top: -1px; }
+.tw-win-cmds .is-readonly { color: var(--icon-readonly); cursor: default; }
+.tw-win-right .twin-done { width: 28px; height: 28px; }
+.tw-win-close { width: 24px; height: 24px; }
+
+/* ---------- Меню «Ещё» со всеми командами над таблицей (Figma node 769:6069, 265×646) ---------- */
+/* Ширина меню — по самому длинному пункту (max-content); все пункты растягиваются до этой ширины. */
+.twin--menu { width: max-content; background: var(--page-bg); border-radius: 8px; box-shadow: 0 0 15px 0 rgba(0,0,0,.12), 0 0 46px 0 rgba(0,0,0,.12); padding: 8px 0 12px; box-sizing: border-box; }
+.twin-mn-list { display: flex; flex-direction: column; gap: 6px; padding: 0 8px; }
+/* Подменю пункта (Figma «Меню вставки столбцов», 2692:140011): как меню, справа от него вплотную (на 1px заходит на край),
+   верх подменю = верх пункта − 8px (первые пункты на одной линии). Пункт с открытым подменю — фон #f3f4f8 (hover). */
+.twin-mn-submenu { position: absolute; z-index: 1; width: max-content; background: var(--page-bg); border-radius: 8px; box-shadow: 0 0 15px 0 rgba(0,0,0,.12), 0 0 46px 0 rgba(0,0,0,.12); padding: 8px 0 12px; box-sizing: border-box; }
+.twin-mn-submenu[hidden] { display: none; }
+.twin--cmdmenu { padding: 8px 0 12px; }   /* меню кнопки тулбара — как подменю (без стрелки вниз), с крестиком */
+/* Пункты подменю — как пункты меню: поле справа 16px (в макете 8px + отступ _closeButtonOffset 8px) */
+.twin-mn-submenu .twin-mn-text { margin-right: 0; }
+.twin-mn-item.is-open { background: #f3f4f8; }   /* Background/hover_background-color */
+.twin-mn-item:not(.has-sub):hover { background: #f3f4f8; }   /* ховер пунктов без стрелки — как у пунктов с подменю (Figma 3991:168060) */
+/* Пункт-радио (Figma «Положение», 3129:183295): справа зона 10 + 12px, у выбранного — точка 6px #cc3d00 по центру */
+.twin-mn-radio { flex: none; margin-left: auto; padding-left: 10px; width: 12px; height: 12px; display: grid; place-items: center; }
+.twin-mn-radio::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #cc3d00; visibility: hidden; }
+.twin-mn-item[aria-checked="true"] .twin-mn-radio::after { visibility: visible; }
+
+/* Положение таблицы в тексте: сдвиг считает скрипт (--tw-shift на блоке таблицы). Таблица шире или уже колонки текста
+   встаёт по её левому краю, по центру или по правому краю. В окне расширенного режима сдвигается само окно. */
+.tw-wrap { margin-left: calc(var(--tw-shift, 0px) - var(--tw-scroll, 0px)); }
+/* Скролл таблицы (Figma 2112:102924): контрол под таблицей и тени по бокам видимой части */
+.tw-hscroll { position: absolute; z-index: 5; height: 12px; }   /* поверх тени */
+.tw-hscroll[hidden], .tw-hshadow[hidden] { display: none; }
+.tw-hscroll-thumb { position: absolute; bottom: 0; height: 6px; border-radius: 6px; background: rgba(205,205,205,.8); cursor: pointer; transition: height .1s ease-out, background-color .1s ease-out; }
+.tw-hscroll:hover .tw-hscroll-thumb, .tw-hscroll.is-drag .tw-hscroll-thumb { height: 12px; background: rgba(196,196,196,.8); }
+.tw-hshadow { position: absolute; z-index: 4; width: 8px; pointer-events: none; }
+.tw-hshadow.is-right { background: linear-gradient(90deg, rgba(0,0,0,0), rgba(0,0,0,.15)); }
+.tw-hshadow.is-left { background: linear-gradient(270deg, rgba(0,0,0,0), rgba(0,0,0,.15)); }
+/* Верх таблицы над залипшей заглавной строкой: граница 1px сверху и по бокам, углы 4px; за уголками — фон страницы */
+.tw-stickcap { position: absolute; z-index: 4; height: 6px; box-sizing: border-box; pointer-events: none;
+  border: 1px solid var(--border); border-bottom: 0; border-radius: 4px 4px 0 0; }
+.tw-stickcap::before { content: ""; position: absolute; left: -1px; right: -1px; top: -1px; height: 5px;
+  background: radial-gradient(circle at 5px 5px, transparent 4px, #fff 4.5px) left top / 5px 5px no-repeat,
+              radial-gradient(circle at 0 5px, transparent 4px, #fff 4.5px) right top / 5px 5px no-repeat; }
+.tw-stickcap[hidden] { display: none; }
+/* В окне расширенного режима — поверх окна, за уголками фон окна */
+html.tw-in-window .tw-stickcap { z-index: 9; }
+html.tw-in-window .tw-stickcap::before {
+  background: radial-gradient(circle at 5px 5px, transparent 4px, #eceaf5 4.5px) left top / 5px 5px no-repeat,
+              radial-gradient(circle at 0 5px, transparent 4px, #eceaf5 4.5px) right top / 5px 5px no-repeat; }
+.tw-hshadow.is-top { height: 8px; background: linear-gradient(180deg, rgba(0,0,0,.15), rgba(0,0,0,0)); }   /* под залипшей заглавной строкой */   /* сдвигается весь блок таблицы (с хэндлерами и тулбарами) */
+html.tw-in-window .tw-wrap { margin-left: calc(-1 * var(--tw-scroll, 0px)); }   /* в окне — только прокрутка */
+html.tw-in-window .tw-hscroll, html.tw-in-window .tw-hshadow { z-index: 9; }   /* поверх окна расширенного режима */
+.twin-mn-item { position: relative; height: 32px; padding: 0 16px 0 12px; border: 0; border-radius: 16px; background: none; display: flex; align-items: center; text-align: left; font-family: var(--font); font-size: 16px; letter-spacing: -0.2256px; color: var(--text); cursor: pointer; }
+.twin-mn-ico svg { display: block; position: relative; top: .5px; }
+.twin-mn-ico { font-family: "cbuc-icons24"; font-size: 24px; line-height: 24px; width: 24px; height: 24px; margin-right: 8px; text-align: center; color: var(--icon-secondary); flex: none; position: relative; top: -.5px; }
+.twin-mn-item.is-danger .twin-mn-ico { color: var(--icon-danger); }
+.twin-mn-text { white-space: nowrap; }
+/* Стрелка подменю — в квадрате 32px у правого края пункта (8px до текста) */
+.twin-mn-item[hidden] { display: none; }
+/* неактивный пункт меню (нет курсора в ячейке) — как неактивные кнопки тулбара */
+.twin-mn-item.is-disabled { cursor: default; color: var(--icon-readonly); }
+.twin-mn-item.is-disabled .twin-mn-ico, .twin-mn-item.is-disabled .twin-mn-sub { color: var(--icon-readonly); }
+.twin-mn-item.is-disabled:hover { background: none; }
+.twin-mn-item.has-sub { padding-right: 0; }
+.twin-mn-sub { flex: none; margin-left: auto; padding-left: 8px; width: 32px; height: 32px; box-sizing: content-box; display: grid; place-items: center; font-family: "cbuc-icons"; font-size: 16px; line-height: 16px; color: var(--icon-secondary); }
+.twin-mn-item.has-switch { padding-right: 13px; }
+.twin-mn-item .twin-switch { flex: none; margin-left: auto; position: relative; left: 0; top: 0; }
+.twin-mn-text { margin-right: 16px; }
+.twin-mn-item:not(.has-sub):not(.has-switch) .twin-mn-text { margin-right: 0; }
+.twin-mn-item.has-sub .twin-mn-text { margin-right: 0; }
+.twin-mn-foot { position: relative; height: 24px; margin-top: 0; }
+.twin-mn-more { position: absolute; left: 50%; margin-left: -19px; top: 12px; width: 38px; height: 12px; padding: 0; border: 0; border-radius: 6px; background: rgba(51,51,51,.05); display: grid; place-items: center; cursor: default; }
+.twin-mn-more svg { display: block; }
+.twin--menu .twin-close { position: absolute; right: -14px; top: 8px; width: 28px; height: 28px; margin: 0; border-radius: 14px; }
+
+/* ---------- Изменение ширины столбцов ---------- */
+.tw-wrap.is-col-resize,
+.tw-wrap.is-col-resize .tw th,
+.tw-wrap.is-col-resize .tw td { cursor: col-resize; }
+html.tw-resizing,
+html.tw-resizing * { cursor: col-resize !important; user-select: none; }
+
+/* Полоска на границе, за которую тянем: 2px, фиолетовая на 50%, со скруглёнными концами */
+.tw-resize-line {
+  position: absolute;
+  z-index: 4;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--accent);
+  opacity: .5;
+  border-radius: 19px;
+  pointer-events: none;
+}
+.tw-resize-line[hidden] { display: none; }
+
+/* ---------- Перетаскивание строк и столбцов ---------- */
+.tw .tw-drag-src { box-shadow: inset 0 0 0 9999px var(--drag-tint); }
+
+/* Линия, куда встанет строка/столбец */
+.tw-drop {
+  position: absolute;
+  z-index: 4;
+  background: var(--accent);
+  border-radius: 1px;
+  pointer-events: none;
+}
+.tw-drop[hidden] { display: none; }
+
+/* В окне расширенного режима — те же хэндлеры «Ухо», что в документе; крупные хэндлеры (.tw-hbig) больше не показываются. */
+.tw-hbig { display: none !important; }
+.tw-hb-ico { width: 16px; height: 16px; display: block; opacity: .3; transition: opacity .12s ease; }
+.tw-handle .tw-hb-ico svg { display: block; width: 16px; height: 16px; opacity: 1; transition: none; }   /* не наследует размеры и прозрачность точек малого хэндлера */
+.tw-hb-plus { cursor: pointer; }
+.tw-hb-grip { cursor: grab; }
+.tw-handle.is-locked .tw-hb-grip { cursor: default; }
+.tw-hb-ico:hover, .tw-handle.is-dragging .tw-hb-grip { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .tw-hb-ico { transition: none; } }
+
+/* Строку шапки не перетаскиваем */
+.tw-handle.is-locked { cursor: default; }
+
+/* Границы, заданные в окне «Границы»: линии поверх сетки таблицы (рисует скрипт по data-bd-* у ячеек) */
+.tw-bd-layer { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 1; pointer-events: none; }
+.tw-bd-line { position: absolute; box-sizing: border-box; }
+
+/* Выделение ячеек: полупрозрачная заливка поверх содержимого, без обводки. */
+.tw-sel {
+  position: absolute;
+  z-index: 1;
+  box-sizing: border-box;
+  border: 0;
+  background: var(--selection-bg);
+  pointer-events: none;
+}
+.tw-sel[hidden] { display: none; }
+
+/* Обводки виджета «Таблица» (правила обводок виджетов): вплотную снаружи к рамке таблицы, 1px, скругление как у таблицы.
+   Активная — info_border-color, solid (курсор или выделение ячеек); мнимая — info_border-color 60%, solid (ховер). */
+.tw-outline { position: absolute; z-index: 4; pointer-events: none; overflow: visible; display: block; }
+.tw-outline[hidden] { display: none; }
+.tw-outline rect { fill: none; stroke: var(--accent); stroke-width: 1px; }
+.tw-outline.is-hover rect { stroke: rgba(123, 98, 248, .6); }
+
+html.tw-dragging,
+html.tw-dragging * { cursor: grabbing !important; user-select: none; }
+html.tw-cell-selecting * { user-select: none; }
+
+/* Единое расположение кнопок шапки во всех окнах (в т. ч. со стрелкой «Назад» и в расширенных настройках), кроме окон выбора фона / цвета — как в окне «Таблица»:
+   крестик 24×24 в 8px от правого края окна, через 12px — галка 28×28, через 12px — сброс 24×24. */
+html .twin:not(.twin--menu):not(.twin--bdcolor):not(.twin--fill) .twin-head:not(.twin--bdcolor *) { min-height: 44px; height: 44px; box-sizing: border-box; padding-right: 8px; }   /* шапка 44px — кнопки по центру, в 22px от верха */
+html .twin:not(.twin--menu):not(.twin--bdcolor):not(.twin--fill) .twin-head:not(.twin--bdcolor *) .twin-cmds { gap: 12px; padding-right: 0; }
+html .twin:not(.twin--menu):not(.twin--bdcolor):not(.twin--fill) .twin-head:not(.twin--bdcolor *) .twin-reset { width: 24px; height: 24px; }
+html .twin:not(.twin--menu):not(.twin--bdcolor):not(.twin--fill) .twin-head:not(.twin--bdcolor *) .twin-reset .twin-ico24 { position: static; top: auto; }   /* круговая стрелка — на одной высоте во всех шапках */
+html .twin:not(.twin--menu):not(.twin--bdcolor):not(.twin--fill) .twin-head:not(.twin--bdcolor *) .twin-done { width: 28px; height: 28px; }
+html .twin:not(.twin--menu):not(.twin--bdcolor):not(.twin--fill) .twin-head:not(.twin--bdcolor *) .twin-close { width: 24px; height: 24px; margin-right: 0; }
+html .twin:not(.twin--menu):not(.twin--bdcolor):not(.twin--fill) .twin-head:not(.twin--bdcolor *) > .twin-close { margin-left: 12px; }
+
+/* Шапка окна настройки со стрелкой «Назад» — один шаблон для всех уровней (Ячейки, Границы, Стиль текста):
+   поле слева 8px, «Назад» 28×28, между ним и заголовком 6px. */
+html .twin-head > .twin-back { margin-left: 0 !important; margin-right: 6px !important; }
+html .twin-head > .twin-back + .twin-title { padding-left: 0 !important; margin-left: 0 !important; }
+html .twin-head:has(> .twin-back) { padding-left: 8px !important; column-gap: 0 !important; }
