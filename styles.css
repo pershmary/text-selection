@@ -111,6 +111,8 @@ body { color: var(--text-text-color); font-weight: var(--font-font-weight-regula
   border-radius: 4px;
   background: var(--text-selection-color);
 }
+/* Paint over opaque widget backgrounds as well as their text. */
+.doc > .is-fully-selected:not(:is(p, h1, h2, h3, h4, h5, h6))::before { z-index: 1; }
 .doc > .is-fully-selected::selection,
 .doc > .is-fully-selected ::selection { background: transparent; }
 

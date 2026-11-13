@@ -6,6 +6,12 @@
   let dragging = false;
   let frame = 0;
 
+  function highlight(block, top, height) {
+    block.style.setProperty('--selection-top', `${top}px`);
+    block.style.setProperty('--selection-height', `${height}px`);
+    block.classList.add('is-fully-selected');
+  }
+
   function update() {
     frame = 0;
     editor.querySelectorAll('.is-fully-selected').forEach(block => {
@@ -19,13 +25,21 @@
     if (!editor.contains(range.startContainer) || !editor.contains(range.endContainer)) return;
 
     for (const block of editor.children) {
+      // Non-text blocks are selected atomically when the range crosses them.
+      if (block.matches('[contenteditable="false"]')) {
+        if (range.intersectsNode(block)) highlight(block, 0, block.clientHeight);
+        continue;
+      }
       if (!block.textContent.trim()) continue;
       const content = document.createRange();
       // Use actual text boundaries, not element boundaries, so dragging to the
       // final character can transition to a full block without crossing a node.
       const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
       const texts = [];
-      while (walker.nextNode()) if (walker.currentNode.length) texts.push(walker.currentNode);
+      while (walker.nextNode()) {
+        const node = walker.currentNode;
+        if (node.textContent.trim() && !node.parentElement.closest('[contenteditable="false"]')) texts.push(node);
+      }
       if (!texts.length) continue;
       content.setStart(texts[0], 0);
       content.setEnd(texts.at(-1), texts.at(-1).length);
@@ -44,9 +58,8 @@
 
       const bounds = content.getBoundingClientRect();
       const box = block.getBoundingClientRect();
-      block.style.setProperty('--selection-top', `${bounds.top - box.top}px`);
-      block.style.setProperty('--selection-height', `${bounds.height}px`);
-      block.classList.add('is-fully-selected');
+      const isText = block.matches('p, h1, h2, h3, h4, h5, h6');
+      highlight(block, isText ? bounds.top - box.top : 0, isText ? bounds.height : block.clientHeight);
     }
   }
   function schedule() {
