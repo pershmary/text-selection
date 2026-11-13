@@ -53,10 +53,6 @@ body { color: var(--text-text-color); font-weight: var(--font-font-weight-regula
 }
 .doc-toolbar .tb-btn { flex: none; }
 .doc-toolbar .tb-sep { background: var(--extra-separator_color, rgba(0, 0, 0, .04)); }
-.doc-toolbar-popup { position: fixed; z-index: 21; max-width: calc(100vw - 16px); box-sizing: border-box; }
-.doc-toolbar-popup .twin-menu-item { display: block; width: 100%; text-align: left; }
-.doc-toolbar-popup form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.doc-toolbar-popup input { min-width: 0; max-width: 100%; }
 /* Expose the full weight range of the variable Inter files from ui-kit. */
 @font-face {
   font-family: Inter;

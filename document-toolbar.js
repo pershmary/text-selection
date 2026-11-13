@@ -5,7 +5,7 @@
   const editor = document.querySelector('.doc');
   const appBar = document.querySelector('.app-toolbar');
   let savedRange = null, backward = false, dragging = false, frame = 0;
-  let popup = null, popupId = null, dismissed = false;
+  let dismissed = false;
   const documentIcon = label => document.querySelector('.app-toolbar [aria-label="' + label + '"] svg').outerHTML;
 
   function selectionRange() {
@@ -57,117 +57,11 @@
     return true;
   }
 
-  function closePopup() {
-    if (!popup) return;
-    popup.remove();
-    const button = toolbar.button(popupId);
-    if (button) button.setAttribute('aria-pressed', 'false');
-    popup = null;
-    popupId = null;
-  }
-
   function execute(command, value) {
     if (!restore()) return;
     document.execCommand(command, false, value);
     savedRange = selectionRange();
-    closePopup();
     schedule();
-  }
-
-  function placePopup() {
-    if (!popup) return;
-    const button = toolbar.button(popupId).getBoundingClientRect();
-    const bar = toolbar.el.getBoundingClientRect();
-    popup.style.left = Math.max(8, Math.min(button.left, window.innerWidth - popup.offsetWidth - 8)) + 'px';
-    popup.style.top = Math.max(8, Math.min(bar.bottom + 4, window.innerHeight - popup.offsetHeight - 8)) + 'px';
-  }
-
-  function openPopup(id, title, build) {
-    const same = popupId === id;
-    closePopup();
-    if (same) return;
-    popupId = id;
-    popup = document.createElement('div');
-    popup.className = 'twin twin--text doc-toolbar-popup';
-    popup.setAttribute('role', 'dialog');
-    popup.setAttribute('aria-label', title);
-    popup.addEventListener('mousedown', e => { if (!e.target.closest('input, select')) e.preventDefault(); });
-    build(popup);
-    document.body.appendChild(popup);
-    toolbar.button(id).setAttribute('aria-pressed', 'true');
-    placePopup();
-    const input = popup.querySelector('input');
-    if (input) input.focus({ preventScroll: true });
-  }
-
-  function menuItem(win, title, action) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'twin-menu-item';
-    button.textContent = title;
-    button.addEventListener('click', action);
-    win.appendChild(button);
-  }
-
-  function styles(id) {
-    openPopup(id, 'Стиль текста', win => {
-      [['Основной текст', 'p'], ['Заголовок 1', 'h1'], ['Заголовок 2', 'h2'], ['Заголовок 3', 'h3'], ['Заголовок 4', 'h4'], ['Заголовок 5', 'h5']].forEach(([title, tag]) => {
-        menuItem(win, title, () => execute('formatBlock', tag));
-      });
-    });
-  }
-
-  function color(id, title, command, initial) {
-    openPopup(id, title, win => {
-      const label = document.createElement('label');
-      label.textContent = title + ' ';
-      const input = document.createElement('input');
-      input.type = 'color';
-      input.value = initial;
-      input.setAttribute('aria-label', title);
-      input.addEventListener('change', () => execute(command, input.value));
-      label.appendChild(input);
-      win.appendChild(label);
-    });
-  }
-
-  function link() {
-    openPopup('link', 'Ссылка', win => {
-      const form = document.createElement('form');
-      const label = document.createElement('label');
-      label.textContent = 'Ссылка ';
-      const input = document.createElement('input');
-      input.type = 'url';
-      input.required = true;
-      input.placeholder = 'https://';
-      input.setAttribute('aria-label', 'Адрес ссылки');
-      label.appendChild(input);
-      const apply = document.createElement('button');
-      apply.type = 'submit';
-      apply.className = 'twin-btn';
-      apply.textContent = 'Применить';
-      form.append(label, apply);
-      form.addEventListener('submit', e => {
-        e.preventDefault();
-        if (/^(https?:\/\/|mailto:|tel:)/i.test(input.value.trim())) execute('createLink', input.value.trim());
-      });
-      win.appendChild(form);
-    });
-  }
-
-  function voice() {
-    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!Recognition) {
-      openPopup('voice', 'Голосовой ввод', win => { win.textContent = 'Голосовой ввод недоступен в этом браузере.'; });
-      return;
-    }
-    const recognition = new Recognition();
-    recognition.lang = document.documentElement.lang || 'ru';
-    recognition.addEventListener('result', e => execute('insertText', e.results[0][0].transcript));
-    recognition.addEventListener('error', () => {
-      openPopup('voice', 'Голосовой ввод', win => { win.textContent = 'Не удалось начать голосовой ввод. Проверьте доступ к микрофону.'; });
-    });
-    recognition.start();
   }
 
   function formatButton(id, icon, title, command) {
@@ -175,29 +69,26 @@
   }
 
   const toolbar = Toolbar.create({ container: document.body, label: 'Форматирование', items: [
-    { id: 'style', text: 'Основной текст', title: 'Стиль текста', arrow: true, onClick: () => styles('style') },
+    { id: 'style', text: 'Основной текст', title: 'Стиль текста', arrow: true, passive: true },
     { sep: true },
-    { id: 'format', icon: '\uE764', title: 'Настроить текст', onClick: () => styles('format') },
+    { id: 'format', icon: '\uE764', title: 'Настроить текст', passive: true },
     { sep: true },
     formatButton('bold', '\uE6C3', 'Жирный', 'bold'),
     formatButton('italic', '\uE6C6', 'Курсив', 'italic'),
     formatButton('underline', '\uE6CE', 'Подчёркнутый', 'underline'),
     formatButton('strike', '\uE6CB', 'Зачёркнутый', 'strikeThrough'),
     { sep: true },
-    { id: 'color', svg: documentIcon('Цвет текста'), title: 'Цвет текста', onClick: () => color('color', 'Цвет текста', 'foreColor', '#000000') },
-    { id: 'background', svg: documentIcon('Цвет выделения'), title: 'Фон текста', onClick: () => color('background', 'Фон текста', 'hiliteColor', '#ffffff') },
+    { id: 'color', svg: documentIcon('Цвет текста'), title: 'Цвет текста', passive: true },
+    { id: 'background', svg: documentIcon('Цвет выделения'), title: 'Фон текста', passive: true },
     { sep: true },
-    { id: 'link', icon: '\uE6A7', title: 'Ссылка', onClick: link },
-    { id: 'voice', svg: documentIcon('Голосовой ввод'), title: 'Голосовой ввод', onClick: voice },
-    { id: 'assistant', svg: documentIcon('Помощник'), title: 'SabyAI', onClick: () => document.querySelector('.app-toolbar [aria-label="Помощник"]').click() },
+    { id: 'link', icon: '\uE6A7', title: 'Ссылка', passive: true },
+    { id: 'voice', svg: documentIcon('Голосовой ввод'), title: 'Голосовой ввод', passive: true },
+    { id: 'assistant', svg: documentIcon('Помощник'), title: 'SabyAI', passive: true },
     { sep: true },
     // Только визуальная команда: поведение объединения блоков пока не задано.
-    { id: 'merge', icon: '\uEBD1', title: 'Объединить' },
-    { id: 'delete', icon: '\uEB72', title: 'Удалить', danger: true, onClick: () => execute('delete') },
-    { id: 'more', icon: '\uEAB4', title: 'Ещё', onClick: () => openPopup('more', 'Ещё', win => {
-      menuItem(win, 'Сбросить форматирование', () => execute('removeFormat'));
-      menuItem(win, 'Удалить ссылку', () => execute('unlink'));
-    }) }
+    { id: 'merge', icon: '\uEBD1', title: 'Объединить', passive: true },
+    { id: 'delete', icon: '\uEB72', title: 'Удалить', danger: true, passive: true },
+    { id: 'more', icon: '\uEAB4', title: 'Ещё', passive: true }
   ] });
   toolbar.el.classList.add('doc-toolbar');
   toolbar.el.querySelectorAll('button').forEach(button => { button.tabIndex = 0; });
@@ -206,10 +97,9 @@
   function update() {
     frame = 0;
     const range = selectionRange();
-    const inControls = toolbar.el.contains(document.activeElement) || (popup && popup.contains(document.activeElement));
+    const inControls = toolbar.el.contains(document.activeElement);
     if (dragging || dismissed || (!range && !inControls)) {
       toolbar.hide();
-      if (!dragging) closePopup();
       return;
     }
     if (range) {
@@ -217,10 +107,10 @@
       const sel = window.getSelection();
       backward = sel.anchorNode === range.endContainer && sel.anchorOffset === range.endOffset;
     }
-    if (!savedRange || !savedRange.startContainer.isConnected || !savedRange.endContainer.isConnected) { toolbar.hide(); closePopup(); return; }
+    if (!savedRange || !savedRange.startContainer.isConnected || !savedRange.endContainer.isConnected) { toolbar.hide(); return; }
     const widgets = selectedWidgets(savedRange);
     const kinds = new Set(widgets.map(widgetKind));
-    if (!widgets.length || (widgets.length === 1 && kinds.has('image'))) { toolbar.hide(); closePopup(); return; }
+    if (!widgets.length || (widgets.length === 1 && kinds.has('image'))) { toolbar.hide(); return; }
     const labels = { p: 'Основной текст', h1: 'Заголовок 1', h2: 'Заголовок 2', h3: 'Заголовок 3', h4: 'Заголовок 4', h5: 'Заголовок 5', title: 'Заголовок документа', image: 'Изображение', callout: 'Инфоблок', list: 'Список', columns: 'Колонки', table: 'Таблица' };
     toolbar.button('style').querySelector('.tb-text').textContent = kinds.size > 1 ? 'Смешанный' : labels[[...kinds][0]] || 'Основной текст';
     const multipleWidgets = widgets.length > 1;
@@ -232,12 +122,11 @@
     const rects = [...savedRange.getClientRects()].filter(rect => rect.width && rect.height);
     const edge = backward ? rects.at(-1) : rects[0];
     const ceiling = Math.max(8, appBar.getBoundingClientRect().bottom + 8);
-    if (!edge || edge.bottom <= ceiling || edge.top >= window.innerHeight) { toolbar.hide(); closePopup(); return; }
+    if (!edge || edge.bottom <= ceiling || edge.top >= window.innerHeight) { toolbar.hide(); return; }
     toolbar.el.hidden = false;
     const w = toolbar.el.offsetWidth, h = toolbar.el.offsetHeight;
     const x = backward ? edge.right : edge.left;
     toolbar.showAt(Math.max(8, Math.min(x - w / 2, window.innerWidth - w - 8)), Math.max(ceiling, edge.top - h - 8));
-    placePopup();
   }
 
   function schedule() { if (!frame) frame = requestAnimationFrame(update); }
@@ -247,23 +136,20 @@
     if (!range || !savedRange || range.compareBoundaryPoints(Range.START_TO_START, savedRange) !== 0 || range.compareBoundaryPoints(Range.END_TO_END, savedRange) !== 0) dismissed = false;
     schedule();
   });
-  editor.addEventListener('pointerdown', e => { if (e.button === 0) { dragging = true; dismissed = false; closePopup(); schedule(); } });
+  editor.addEventListener('pointerdown', e => { if (e.button === 0) { dragging = true; dismissed = false; schedule(); } });
   document.addEventListener('pointerup', () => { dragging = false; schedule(); });
   document.addEventListener('pointercancel', () => { dragging = false; schedule(); });
   document.addEventListener('pointerdown', e => {
-    if (!editor.contains(e.target) && !toolbar.el.contains(e.target) && !(popup && popup.contains(e.target))) {
+    if (!editor.contains(e.target) && !toolbar.el.contains(e.target)) {
       dismissed = true;
-      closePopup();
       schedule();
     }
   });
   document.addEventListener('focusin', schedule);
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && (!toolbar.el.hidden || popup)) {
-      const hadPopup = !!popup;
-      closePopup();
+    if (e.key === 'Escape' && !toolbar.el.hidden) {
       restore();
-      dismissed = !hadPopup;
+      dismissed = true;
       schedule();
     }
   });

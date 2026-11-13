@@ -2,7 +2,7 @@
 /* ---------- Компонент тулбара ----------
    Toolbar.create({ container, label, items }) → { el, button(id), setPressed(id, on), refresh(), showAt(x, y), hide() }
    items: [{ id, icon: '' | svg: '<svg…>', title, text?, arrow?, toggle?, pressed?, danger?, centered?,
-             isPressed?: () => bool, onClick?: function (btn, pressed) {} }]
+             passive?: boolean, isPressed?: () => bool, onClick?: function (btn, pressed) {} }]
    Тулбар кладётся в контейнер (container), координаты showAt — внутри этого контейнера. */
 const Toolbar = (function () {
   const WINDOW_GAP = 4;   // расстояние между тулбаром и окном, которое открывает его кнопка
@@ -59,7 +59,7 @@ const Toolbar = (function () {
       b.className = 'tb-btn' + (item.danger ? ' tb-btn--danger' : '');
       b.tabIndex = -1;
       if (item.title) { b.title = item.title; b.setAttribute('aria-label', item.title); }
-      if (item.toggle || item.arrow) b.setAttribute('aria-pressed', item.pressed ? 'true' : 'false');
+      if (!item.passive && (item.toggle || item.arrow)) b.setAttribute('aria-pressed', item.pressed ? 'true' : 'false');
       let html = '<span class="tb-btn-inner">';
       if (item.svg) html += item.svg;
       else if (item.icon) html += '<span class="tw-icon tw-icon--24 tb-icon' + (item.centered ? ' tb-icon--centered' : '') +
@@ -71,7 +71,7 @@ const Toolbar = (function () {
       b.innerHTML = html;
       // Нажатие на кнопку тулбара не сбивает курсор в ячейке.
       b.addEventListener('mousedown', function (e) { e.preventDefault(); });
-      b.addEventListener('click', function () {
+      if (!item.passive) b.addEventListener('click', function () {
         let pressed = b.getAttribute('aria-pressed') === 'true';
         if ((item.toggle || item.arrow) && !item.isPressed) {
           pressed = !pressed;
