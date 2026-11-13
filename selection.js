@@ -27,6 +27,8 @@
     for (const block of editor.children) {
       // Non-text blocks are selected atomically when the range crosses them.
       if (block.matches('[contenteditable="false"]')) {
+        // The table component manages text and cell ranges within its own area.
+        if (block.matches('.table-widget') && (block.contains(range.startContainer) || block.contains(range.endContainer))) continue;
         if (range.intersectsNode(block)) highlight(block, 0, block.clientHeight);
         continue;
       }

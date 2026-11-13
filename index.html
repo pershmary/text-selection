@@ -7,8 +7,8 @@
   <link rel="stylesheet" href="vendor/ui-kit/tokens.css">
   <link rel="stylesheet" href="vendor/ui-kit/fonts/fonts.css">
   <link rel="stylesheet" href="vendor/table-widget/css/icon-fonts.css">
-  <link rel="stylesheet" href="vendor/table-widget/css/table-widget.css">
-<link rel="stylesheet" href="styles.css?v=block-selection-1">
+  <link rel="stylesheet" href="vendor/table-widget/css/table-widget.css?v=table-1">
+<link rel="stylesheet" href="styles.css?v=table-1">
 </head>
 <body>
 <header class="app-head">
@@ -51,6 +51,40 @@
     <figure class="doc-image-placeholder" contenteditable="false" role="img" aria-label="Серая заглушка изображения"></figure>
     <p>Попробуйте начать выделение перед изображением и закончить после него. Такой маршрут полезен, когда нужно перенести часть инструкции вместе с иллюстрацией. Начало и конец диапазона могут оказаться внутри текста, а между ними — целые блоки.</p>
 
+    <h2>Границы выделения</h2>
+    <p>В таблице собраны основные ситуации: от выбора нескольких букв до выделения целого блока. Текст в ячейках можно редактировать, а строки и столбцы — выбирать с помощью маркеров таблицы.</p>
+    <div class="table-widget" contenteditable="false" aria-label="Примеры выделения текста">
+      <div class="table-scroll">
+        <div class="tw-wrap" id="tw-wrap">
+          <button type="button" class="tw-marker" tabindex="-1" aria-label="Таблица"></button>
+          <table class="tw" spellcheck="false" aria-label="Границы выделения">
+            <colgroup><col class="c1"><col><col></colgroup>
+            <thead><tr><th scope="col">Что выбираем</th><th scope="col">Как выделить</th><th scope="col">Что видно</th></tr></thead>
+            <tbody>
+              <tr><td>Часть текста</td><td>Провести мышью по нескольким словам</td><td>Подсветка выбранных символов</td></tr>
+              <tr><td>Весь абзац</td><td>Выделить весь текст и потянуть дальше</td><td>Подложка на всю ширину блока</td></tr>
+              <tr><td>Несколько ячеек</td><td>Начать в одной ячейке и перейти в другую</td><td>Прямоугольный диапазон ячеек</td></tr>
+              <tr><td>Строка или столбец</td><td>Нажать на маркер у края таблицы</td><td>Подсветка всей строки или столбца</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- Кнопка «Заполнить таблицу» (Figma 1496:136998): под только что созданной таблицей, на 28px ниже неё, по центру экрана -->
+    <div class="tw-filldemo" contenteditable="false"><button type="button" class="tw-filldemo-btn">Заполнить таблицу</button></div>
+    <!-- Пустая строка на месте удалённой таблицы (Figma 1049:22925): курсор ввода и быстрые кнопки виджетов справа -->
+    <div class="doc-empty" contenteditable="false">
+      <div class="doc-empty-line" contenteditable="true" spellcheck="false" aria-label="Пустая строка"></div>
+      <div class="doc-quick" role="toolbar" aria-label="Быстрая вставка">
+        <button type="button" class="doc-qbtn" title="Маркированный список" aria-label="Маркированный список">&#xe6c7;</button>
+        <button type="button" class="doc-qbtn" title="Нумерованный список" aria-label="Нумерованный список">&#xe6c8;</button>
+        <button type="button" class="doc-qbtn" title="Изображение" aria-label="Изображение">&#xe9a3;</button>
+        <button type="button" class="doc-qbtn" title="Таблица" aria-label="Таблица">&#xe6cc;</button>
+        <button type="button" class="doc-qbtn" title="Колонки" aria-label="Колонки">&#xeaee;</button>
+        <button type="button" class="doc-qbtn" title="Добавить" aria-label="Добавить">&#xeadd;</button>
+      </div>
+    </div>
+
     <h2>Два способа работать с текстом</h2>
     <p>В колонках удобно сравнивать подходы. Прочитайте левую и правую части, а затем попробуйте выделить фразу внутри каждой из них. Колонка задаёт свою ширину строки, но слова остаются обычным редактируемым текстом.</p>
     <div class="doc-columns">
@@ -76,7 +110,20 @@
 </aside>
 </div>
 
+<script src="vendor/table-widget/js/toolbar.js?v=table-1"></script>
+<script src="vendor/table-widget/js/table.js?v=table-1"></script>
+<script src="vendor/table-widget/js/commands.js?v=table-1"></script>
+<script src="vendor/table-widget/js/windows.js?v=table-1"></script>
+<script src="vendor/table-widget/js/toolbar-range.js?v=table-1"></script>
+<script src="vendor/table-widget/js/toolbar-columns.js?v=table-1"></script>
+<script src="vendor/table-widget/js/toolbar-rows.js?v=table-1"></script>
+<script src="vendor/table-widget/js/toolbar-cell.js?v=table-1"></script>
+<script src="vendor/table-widget/js/toolbar-text.js?v=table-1"></script>
+<script src="vendor/table-widget/js/widget-outline.js?v=table-1"></script>
+<script src="vendor/table-widget/js/table-window.js?v=table-1"></script>
+<script src="vendor/table-widget/js/table-create.js?v=table-1"></script>
+<script src="vendor/table-widget/js/undo-redo-buttons.js?v=table-1"></script>
 <script src="vendor/table-widget/js/editor-toolbar-shadow.js"></script>
-<script src="selection.js?v=block-selection-1"></script>
+<script src="selection.js?v=table-1"></script>
 </body>
 </html>

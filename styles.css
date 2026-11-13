@@ -144,3 +144,19 @@ body { color: var(--text-text-color); font-weight: var(--font-font-weight-regula
 @media (max-width: 640px) {
   .doc-columns { grid-template-columns: 1fr; gap: 16px; }
 }
+
+/* Table component uses the same ui-kit palette as the surrounding document. */
+:root {
+  --selection-bg: color-mix(in srgb, var(--border-info_border-color) 20%, transparent);
+  --on-accent: var(--icon-contrast_icon-color);
+  --btn-dot-bg: var(--background-background-color);
+  --handle-bg: var(--border-border-color);
+  --tb-bg: var(--background-info_background-color);
+  --tb-btn-hover: var(--background-info_hover_background-color);
+  --tb-btn-active: var(--background-info_active_background-color);
+  --win-bg: var(--background-contrast_background-color);
+}
+.doc .tw { font-size: var(--font-font-size-font-size_xl); }
+@media (max-width: 720px) {
+  .doc > .table-widget > .table-scroll { overflow-x: auto; }
+}
