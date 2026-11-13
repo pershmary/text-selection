@@ -109,8 +109,8 @@ body { color: var(--text-text-color); font-weight: var(--font-font-weight-regula
 /* Partial selection follows glyphs; full selection spans the text column. */
 .doc { --text-selection-color: color-mix(in srgb, var(--border-info_border-color) 20%, transparent); }
 .doc ::selection { background: var(--text-selection-color); color: inherit; }
-.doc > .is-fully-selected { position: relative; isolation: isolate; }
-.doc > .is-fully-selected::before {
+.doc .is-fully-selected { position: relative; isolation: isolate; }
+.doc .is-fully-selected::before {
   content: '';
   position: absolute;
   z-index: -1;
@@ -124,8 +124,8 @@ body { color: var(--text-text-color); font-weight: var(--font-font-weight-regula
 }
 /* Paint over opaque widget backgrounds as well as their text. */
 .doc > .is-fully-selected:not(:is(p, h1, h2, h3, h4, h5, h6))::before { z-index: 1; }
-.doc > .is-fully-selected::selection,
-.doc > .is-fully-selected ::selection { background: transparent; }
+.doc .is-fully-selected::selection,
+.doc .is-fully-selected ::selection { background: transparent; }
 /* Выделение из документа не показывает ховер и маркеры редактирования таблицы. */
 .doc-selecting .table-widget :is(.tw-outline, .tw-add, .tw-handle, .tw-resize-line),
 .table-widget.is-fully-selected :is(.tw-outline, .tw-add, .tw-handle, .tw-resize-line) { visibility: hidden; }
@@ -135,9 +135,9 @@ body { color: var(--text-text-color); font-weight: var(--font-font-weight-regula
 .table-widget.is-fully-selected .tw :is(th, td) { cursor: text; }
 
 /* Document examples: list, image placeholder, callout and two columns. */
-.doc ol { margin: 12px 0 16px; padding-inline-start: 28px; }
-.doc li { margin: 8px 0; padding-inline-start: 4px; }
-.doc li::marker { color: var(--text-label_contrast_text-color); }
+.doc :is(ol, ul) { margin: 12px 0 16px; padding-inline-start: 24px; }
+.doc li { margin: 8px 0; padding-inline-start: 0; }
+.doc li::marker { color: var(--text-text-color); }
 .doc-image-placeholder {
   margin: 20px 0;
   border-radius: 8px;

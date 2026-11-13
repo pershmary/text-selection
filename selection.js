@@ -59,7 +59,11 @@
     const range = selection.getRangeAt(0);
     if (!editor.contains(range.startContainer) || !editor.contains(range.endContainer)) return;
 
-    for (const block of editor.children) {
+    const blocks = [...editor.children, ...editor.querySelectorAll(':scope > :is(ol, ul) > li')];
+    for (const block of blocks) {
+      // Целиком выбранный список сохраняет общую подсветку. При выборе
+      // отдельных пунктов каждый из них подсвечивается отдельно, без номера.
+      if (block.matches('li') && block.parentElement.classList.contains('is-fully-selected')) continue;
       // Non-text blocks are selected atomically when the range crosses them.
       if (block.matches('[contenteditable="false"]')) {
         // The table component manages text and cell ranges within its own area.
