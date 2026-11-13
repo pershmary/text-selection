@@ -113,3 +113,32 @@ body { color: var(--text-text-color); font-weight: var(--font-font-weight-regula
 }
 .doc > .is-fully-selected::selection,
 .doc > .is-fully-selected ::selection { background: transparent; }
+
+/* Document examples: list, image placeholder, callout and two columns. */
+.doc ol { margin: 12px 0 16px; padding-inline-start: 28px; }
+.doc li { margin: 8px 0; padding-inline-start: 4px; }
+.doc li::marker { color: var(--text-label_contrast_text-color); }
+.doc-image-placeholder {
+  height: 256px;
+  margin: 20px 0;
+  border-radius: 8px;
+  background: var(--background-contrast_background-color);
+  border: 1px solid var(--border-unaccented_border-color);
+}
+.doc-callout {
+  display: flex;
+  gap: 12px;
+  margin: 24px 0;
+  padding: 16px 20px;
+  border: 1px solid color-mix(in srgb, var(--border-info_border-color) 20%, transparent);
+  border-radius: 8px;
+  background: var(--background-info_background-color);
+}
+.doc-callout-icon { flex: none; font-size: var(--font-font-size-font-size_5xl); line-height: 32px; }
+.doc-callout > div { min-width: 0; }
+.doc-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; margin: 16px 0 24px; }
+.doc-column { min-width: 0; }
+.doc-column h3 { margin-top: 0; }
+@media (max-width: 640px) {
+  .doc-columns { grid-template-columns: 1fr; gap: 16px; }
+}
