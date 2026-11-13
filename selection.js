@@ -4,7 +4,35 @@
   const editor = document.querySelector('.doc');
   let pointer = null;
   let dragging = false;
+  let dragOrigin = null;
+  let dragAnchor = null;
+  let finishingDrag = false;
   let frame = 0;
+
+  function expandTableSelection() {
+    if ((!dragging && !finishingDrag) || !dragOrigin || dragOrigin.matches('.table-widget')) return;
+    const selection = window.getSelection();
+    if (!dragAnchor && selection.anchorNode && editor.contains(selection.anchorNode)) {
+      const element = selection.anchorNode.nodeType === Node.ELEMENT_NODE ? selection.anchorNode : selection.anchorNode.parentElement;
+      if (!element.closest('.table-widget')) dragAnchor = { node: selection.anchorNode, offset: selection.anchorOffset };
+    }
+    if (!pointer || !dragAnchor || !dragAnchor.node.isConnected) return;
+    const under = document.elementFromPoint(pointer.x, pointer.y);
+    const table = under && under.closest('.doc > .table-widget');
+    if (!table) return;
+    const anchor = document.createRange();
+    anchor.setStart(dragAnchor.node, dragAnchor.offset);
+    anchor.collapse(true);
+    const block = document.createRange();
+    block.selectNode(table);
+    const forward = anchor.compareBoundaryPoints(Range.START_TO_START, block) < 0;
+    const offset = Array.prototype.indexOf.call(editor.childNodes, table) + (forward ? 1 : 0);
+    // Фокус ставим за границей всего виджета, сохраняя исходную точку
+    // выделения. Курсор внутри таблицы не превращает его в выделение ячеек.
+    if (selection.anchorNode !== dragAnchor.node || selection.anchorOffset !== dragAnchor.offset || selection.focusNode !== editor || selection.focusOffset !== offset) {
+      selection.setBaseAndExtent(dragAnchor.node, dragAnchor.offset, editor, offset);
+    }
+  }
 
   function highlight(block, top, height) {
     block.style.setProperty('--selection-top', `${top}px`);
@@ -14,6 +42,12 @@
 
   function update() {
     frame = 0;
+    expandTableSelection();
+    if (finishingDrag) {
+      finishingDrag = false;
+      dragOrigin = null;
+      dragAnchor = null;
+    }
     editor.querySelectorAll('.is-fully-selected').forEach(block => {
       block.classList.remove('is-fully-selected');
       block.style.removeProperty('--selection-top');
@@ -28,7 +62,7 @@
       // Non-text blocks are selected atomically when the range crosses them.
       if (block.matches('[contenteditable="false"]')) {
         // The table component manages text and cell ranges within its own area.
-        if (block.matches('.table-widget') && (block.contains(range.startContainer) || block.contains(range.endContainer))) continue;
+        if (block.matches('.table-widget') && block.contains(range.startContainer) && block.contains(range.endContainer)) continue;
         if (range.intersectsNode(block)) highlight(block, 0, block.clientHeight);
         continue;
       }
@@ -72,6 +106,11 @@
     if (event.button !== 0) return;
     pointer = null;
     dragging = true;
+    finishingDrag = false;
+    dragAnchor = null;
+    dragOrigin = event.target;
+    while (dragOrigin && dragOrigin !== editor && dragOrigin.parentElement !== editor) dragOrigin = dragOrigin.parentElement;
+    if (dragOrigin === editor) dragOrigin = null;
     schedule();
   });
   document.addEventListener('pointermove', event => {
@@ -79,8 +118,15 @@
     pointer = { x: event.clientX, y: event.clientY };
     schedule();
   });
-  document.addEventListener('pointerup', () => { dragging = false; schedule(); });
-  document.addEventListener('pointercancel', () => { dragging = false; pointer = null; schedule(); });
+  document.addEventListener('pointerup', () => { finishingDrag = dragging; dragging = false; schedule(); });
+  document.addEventListener('pointercancel', () => {
+    dragging = false;
+    finishingDrag = false;
+    dragOrigin = null;
+    dragAnchor = null;
+    pointer = null;
+    schedule();
+  });
   document.addEventListener('keydown', () => { pointer = null; schedule(); });
   editor.addEventListener('input', schedule);
   window.addEventListener('resize', schedule);
