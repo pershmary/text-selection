@@ -19,8 +19,8 @@
     return range.cloneRange();
   }
 
-  function selectedWidgetCount(range) {
-    let count = 0;
+  function selectedWidgets(range) {
+    const widgets = [];
     // Виджет — непосредственный блок документа, как и при полной подсветке
     // в selection.js. Вложенное форматирование не создаёт новые виджеты.
     for (const widget of editor.children) {
@@ -33,9 +33,19 @@
       // частично. Граница в начале следующего блока не считается выделением.
       if (range.compareBoundaryPoints(Range.START_TO_START, content) > 0) content.setStart(range.startContainer, range.startOffset);
       if (range.compareBoundaryPoints(Range.END_TO_END, content) < 0) content.setEnd(range.endContainer, range.endOffset);
-      if (!content.collapsed && (atomic || content.toString().trim())) count++;
+      if (!content.collapsed && (atomic || content.toString().trim())) widgets.push(widget);
     }
-    return count;
+    return widgets;
+  }
+
+  function widgetKind(widget) {
+    if (widget.matches('.doc-title')) return 'title';
+    if (widget.matches('.doc-image-placeholder')) return 'image';
+    if (widget.matches('.doc-callout')) return 'callout';
+    if (widget.matches('ol, ul')) return 'list';
+    if (widget.matches('.doc-columns')) return 'columns';
+    if (widget.matches('.table-widget')) return 'table';
+    return widget.tagName.toLowerCase();
   }
 
   function restore() {
@@ -179,6 +189,7 @@
     { sep: true },
     { id: 'link', icon: '\uE6A7', title: 'Ссылка', onClick: link },
     { id: 'voice', svg: documentIcon('Голосовой ввод'), title: 'Голосовой ввод', onClick: voice },
+    { id: 'assistant', svg: documentIcon('Помощник'), title: 'SabyAI', onClick: () => document.querySelector('.app-toolbar [aria-label="Помощник"]').click() },
     { sep: true },
     // Только визуальная команда: поведение объединения блоков пока не задано.
     { id: 'merge', icon: '\uEBD1', title: 'Объединить' },
@@ -207,8 +218,14 @@
       backward = sel.anchorNode === range.endContainer && sel.anchorOffset === range.endOffset;
     }
     if (!savedRange || !savedRange.startContainer.isConnected || !savedRange.endContainer.isConnected) { toolbar.hide(); closePopup(); return; }
-    const multipleWidgets = selectedWidgetCount(savedRange) > 1;
+    const widgets = selectedWidgets(savedRange);
+    const kinds = new Set(widgets.map(widgetKind));
+    if (!widgets.length || (widgets.length === 1 && kinds.has('image'))) { toolbar.hide(); closePopup(); return; }
+    const labels = { p: 'Основной текст', h1: 'Заголовок 1', h2: 'Заголовок 2', h3: 'Заголовок 3', h4: 'Заголовок 4', h5: 'Заголовок 5', title: 'Заголовок документа', image: 'Изображение', callout: 'Инфоблок', list: 'Список', columns: 'Колонки', table: 'Таблица' };
+    toolbar.button('style').querySelector('.tb-text').textContent = kinds.size > 1 ? 'Смешанный' : labels[[...kinds][0]] || 'Основной текст';
+    const multipleWidgets = widgets.length > 1;
     toolbar.el.setAttribute('aria-label', multipleWidgets ? 'Форматирование + объединение' : 'Форматирование');
+    toolbar.button('assistant').hidden = multipleWidgets;
     toolbar.button('merge').hidden = !multipleWidgets;
     toolbar.button('delete').hidden = !multipleWidgets;
     actionsSeparator.hidden = !multipleWidgets;
