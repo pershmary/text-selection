@@ -160,3 +160,17 @@ body { color: var(--text-text-color); font-weight: var(--font-font-weight-regula
 @media (max-width: 720px) {
   .doc > .table-widget > .table-scroll { overflow-x: auto; }
 }
+
+.document-selection-toolbar { position: fixed; z-index: 40; max-width: calc(100vw - 16px); }
+.document-selection-toolbar .tb-btn:disabled { opacity: .4; cursor: default; }
+.document-selection-toolbar .tb-text { white-space: nowrap; }
+.document-format-popup {
+  position: fixed; z-index: 41; display: grid; gap: 4px; padding: 8px;
+  max-width: calc(100vw - 32px); background: var(--background-background-color);
+  border: 1px solid var(--border-unaccented_border-color); border-radius: 8px;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--text-text-color) 12%, transparent);
+  color: var(--text-text-color); font: 14px/24px var(--font-font-family-default), sans-serif;
+}
+.document-format-popup button { border: 0; border-radius: 4px; padding: 4px 8px; text-align: left; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.document-format-popup button:hover { background: var(--background-info_hover_background-color); }
+.document-format-popup input { font: inherit; min-width: 0; }
