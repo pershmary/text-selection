@@ -139,11 +139,18 @@ body { color: var(--text-text-color); font-weight: var(--font-font-weight-regula
 .doc li { margin: 8px 0; padding-inline-start: 4px; }
 .doc li::marker { color: var(--text-label_contrast_text-color); }
 .doc-image-placeholder {
-  height: 256px;
   margin: 20px 0;
   border-radius: 8px;
-  background: var(--background-contrast_background-color);
+  background: var(--background-info_background-color);
   border: 1px solid var(--border-unaccented_border-color);
+}
+.doc-image-placeholder img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: inherit;
+  user-select: none;
+  pointer-events: none;
 }
 .doc-callout {
   display: flex;
