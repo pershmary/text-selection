@@ -42,9 +42,58 @@ body { color: var(--text-text-color); font-weight: var(--font-font-weight-regula
 .app-ritem:hover { background: var(--background-unaccented_background-color) !important; }
 .app-tshadow::after { background: linear-gradient(180deg, var(--components-scroll-shadow_start-color_scroll), transparent); }
 .doc:focus { outline: none; }
-.doc-title { font-size: var(--font-font-size-font-size_8xl); font-weight: var(--font-font-weight-bold); }
-.doc-text { font-size: var(--font-font-size-font-size_xl); }
-.doc h2 { margin: 32px 0 16px; font-size: var(--font-font-size-font-size_5xl); line-height: 1.35; font-weight: var(--font-font-weight-bold); }
+/* The kit supplies variable Inter files; expose their full weight range.
+   Its named Bold token is 600, while the SabyDoc specification requires 700. */
+@font-face {
+  font-family: Inter;
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("vendor/ui-kit/fonts/Inter/Inter-roman.var.woff2") format("woff2");
+}
+@font-face {
+  font-family: Inter;
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("vendor/ui-kit/fonts/Inter/Inter-italic.var.woff2") format("woff2");
+}
+.doc {
+  --doc-heading-weight: 700;
+  display: flow-root;
+  color: var(--text-text-color);
+  font-family: var(--font-font-family-default), sans-serif;
+  font-size: var(--font-font-size-font-size_xl);
+  line-height: 24px;
+  font-weight: var(--font-font-weight-regular);
+}
+.doc :is(h1, h2, h3, h4, h5, p) { padding: 0; }
+.doc :is(h1, h2, h3, h4, h5) { font-weight: var(--doc-heading-weight); }
+.doc .doc-title {
+  margin: 48px 0 32px;
+  font-size: var(--font-font-size-font-size_8xl);
+  line-height: 44px;
+}
+.doc h1:not(.doc-title) {
+  margin: 32px 0 14px;
+  font-size: var(--font-font-size-font-size_7xl);
+  line-height: 42px;
+  border-bottom: 1px solid var(--border-unaccented_border-color);
+}
+.doc h2 { margin: 28px 0 10px; font-size: var(--font-font-size-font-size_6xl); line-height: 32px; }
+.doc h3 { margin: 22px 0 8px; font-size: var(--font-font-size-font-size_5xl); line-height: 30px; }
+.doc h4 { margin: 18px 0 6px; font-size: var(--font-font-size-font-size_4xl); line-height: 26px; }
+.doc h5 { margin: 14px 0 6px; font-size: var(--font-font-size-font-size_3xl); line-height: 26px; }
+.doc p {
+  margin: 4px 0;
+  font-size: var(--font-font-size-font-size_xl);
+  line-height: 24px;
+  font-weight: var(--font-font-weight-regular);
+}
+.doc :is(b, strong) { font-weight: var(--doc-heading-weight); }
+.doc :is(i, em) { font-style: italic; }
+.doc u { text-decoration: underline; }
+.doc :is(s, del) { text-decoration: line-through; }
 
 /* Partial selection follows glyphs; full selection spans the text column. */
 .doc { --text-selection-color: color-mix(in srgb, var(--border-info_border-color) 20%, transparent); }
