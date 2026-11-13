@@ -21,20 +21,37 @@
 
   function selectedWidgets(range) {
     const widgets = [];
-    const candidates = [...editor.children].flatMap(widget => {
-      if (!widget.matches('ol, ul')) return [widget];
-      const walker = document.createTreeWalker(widget, NodeFilter.SHOW_TEXT);
-      const texts = [];
-      while (walker.nextNode()) if (walker.currentNode.textContent.trim()) texts.push(walker.currentNode);
-      if (!texts.length) return [widget];
-      const content = document.createRange();
-      content.setStart(texts[0], 0);
-      content.setEnd(texts.at(-1), texts.at(-1).length);
-      const wholeList = range.compareBoundaryPoints(Range.START_TO_START, content) <= 0 && range.compareBoundaryPoints(Range.END_TO_END, content) >= 0;
-      return wholeList ? [widget] : [...widget.children].filter(child => child.matches('li'));
-    });
-    // Отдельные пункты — самостоятельные виджеты; целиком выбранный список
-    // остаётся одним блоком. Вложенные начертания не меняют число виджетов.
+    const candidates = [];
+    function visit(widget) {
+      if (widget.matches('.doc-callout, .doc-columns, .doc-column')) {
+        const container = document.createRange();
+        container.selectNode(widget);
+        const whole = range.compareBoundaryPoints(Range.START_TO_START, container) <= 0 && range.compareBoundaryPoints(Range.END_TO_END, container) >= 0;
+        if (whole) candidates.push(widget);
+        else [...widget.children].forEach(visit);
+        return;
+      }
+      if (widget.matches('ol, ul')) {
+        const walker = document.createTreeWalker(widget, NodeFilter.SHOW_TEXT);
+        const texts = [];
+        while (walker.nextNode()) if (walker.currentNode.textContent.trim()) texts.push(walker.currentNode);
+        if (!texts.length) return;
+        const content = document.createRange();
+        content.setStart(texts[0], 0);
+        content.setEnd(texts.at(-1), texts.at(-1).length);
+        const whole = range.compareBoundaryPoints(Range.START_TO_START, content) <= 0 && range.compareBoundaryPoints(Range.END_TO_END, content) >= 0;
+        if (whole) candidates.push(widget);
+        else [...widget.children].filter(child => child.matches('li')).forEach(visit);
+        return;
+      }
+      // Служебная иконка инфоблока не является текстовым виджетом.
+      if (widget.matches('[contenteditable="false"]') && widget.parentElement !== editor) return;
+      if (widget.matches('p, h1, h2, h3, h4, h5, h6, li, [contenteditable="false"]') || !widget.children.length) candidates.push(widget);
+      else [...widget.children].forEach(visit);
+    }
+    [...editor.children].forEach(visit);
+    // Внутренние текстовые блоки — самостоятельные виджеты; контейнер,
+    // выбранный целиком снаружи, остаётся одним блоком.
     for (const widget of candidates) {
       if (!range.intersectsNode(widget)) continue;
       const content = document.createRange();
@@ -55,7 +72,7 @@
     if (widget.matches('.doc-image-placeholder')) return 'image';
     if (widget.matches('.doc-callout')) return 'callout';
     if (widget.matches('ol, ul, li')) return 'list';
-    if (widget.matches('.doc-columns')) return 'columns';
+    if (widget.matches('.doc-columns, .doc-column')) return 'columns';
     if (widget.matches('.table-widget')) return 'table';
     return widget.tagName.toLowerCase();
   }

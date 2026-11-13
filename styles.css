@@ -126,6 +126,7 @@ body { color: var(--text-text-color); font-weight: var(--font-font-weight-regula
 .doc > .is-fully-selected:not(:is(p, h1, h2, h3, h4, h5, h6))::before { z-index: 1; }
 .doc .is-fully-selected::selection,
 .doc .is-fully-selected ::selection { background: transparent; }
+.doc .tw :is(th, td).is-fully-selected::before { left: 8px; right: 8px; }
 /* Выделение из документа не показывает ховер и маркеры редактирования таблицы. */
 .doc-selecting .table-widget :is(.tw-outline, .tw-add, .tw-handle, .tw-resize-line),
 .table-widget.is-fully-selected :is(.tw-outline, .tw-add, .tw-handle, .tw-resize-line) { visibility: hidden; }

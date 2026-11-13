@@ -59,11 +59,16 @@
     const range = selection.getRangeAt(0);
     if (!editor.contains(range.startContainer) || !editor.contains(range.endContainer)) return;
 
-    const blocks = [...editor.children, ...editor.querySelectorAll(':scope > :is(ol, ul) > li')];
+    const blocks = editor.querySelectorAll(':scope > *, p, h1, h2, h3, h4, h5, h6, ol, ul, li, .doc-column, th, td, th div, td div');
     for (const block of blocks) {
-      // Целиком выбранный список сохраняет общую подсветку. При выборе
-      // отдельных пунктов каждый из них подсвечивается отдельно, без номера.
-      if (block.matches('li') && block.parentElement.classList.contains('is-fully-selected')) continue;
+      // Общая подложка выбранного контейнера заменяет подложки его детей.
+      if (block.parentElement.closest('.is-fully-selected')) continue;
+      if (block.matches('.doc-callout, .doc-columns, .doc-column')) {
+        const container = document.createRange();
+        container.selectNode(block);
+        if (range.compareBoundaryPoints(Range.START_TO_START, container) <= 0 && range.compareBoundaryPoints(Range.END_TO_END, container) >= 0) highlight(block, 0, block.clientHeight);
+        continue;
+      }
       // Non-text blocks are selected atomically when the range crosses them.
       if (block.matches('[contenteditable="false"]')) {
         // The table component manages text and cell ranges within its own area.
@@ -77,6 +82,9 @@
         }
         continue;
       }
+      // Ячейка без блочной разметки содержит один текстовый виджет. Если
+      // блоки есть, каждый из них обрабатывается отдельно, как в колонках.
+      if (block.matches('th, td, th div, td div') && block.querySelector('p, h1, h2, h3, h4, h5, h6, ol, ul, div')) continue;
       if (!block.textContent.trim()) continue;
       const content = document.createRange();
       // Use actual text boundaries, not element boundaries, so dragging to the
@@ -85,7 +93,8 @@
       const texts = [];
       while (walker.nextNode()) {
         const node = walker.currentNode;
-        if (node.textContent.trim() && !node.parentElement.closest('[contenteditable="false"]')) texts.push(node);
+        const atomic = node.parentElement.closest('[contenteditable="false"]');
+        if (node.textContent.trim() && (!atomic || !block.contains(atomic))) texts.push(node);
       }
       if (!texts.length) continue;
       content.setStart(texts[0], 0);
@@ -101,11 +110,11 @@
       const backward = selection.anchorNode === range.endContainer && selection.anchorOffset === range.endOffset;
       const pastEnd = pointer && !backward && (pointer.y > last.bottom || (pointer.y >= last.top && pointer.x > last.right));
       const pastStart = pointer && backward && (pointer.y < first.top || (pointer.y <= first.bottom && pointer.x < first.left));
-      if (start === 0 && end === 0 && !pastEnd && !pastStart) continue;
+      if (block.parentElement === editor && start === 0 && end === 0 && !pastEnd && !pastStart) continue;
 
       const bounds = content.getBoundingClientRect();
       const box = block.getBoundingClientRect();
-      const isText = block.matches('p, h1, h2, h3, h4, h5, h6');
+      const isText = block.matches('p, h1, h2, h3, h4, h5, h6, th, td, th div, td div');
       highlight(block, isText ? bounds.top - box.top : 0, isText ? bounds.height : block.clientHeight);
     }
   }
