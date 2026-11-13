@@ -126,6 +126,13 @@ body { color: var(--text-text-color); font-weight: var(--font-font-weight-regula
 .doc > .is-fully-selected:not(:is(p, h1, h2, h3, h4, h5, h6))::before { z-index: 1; }
 .doc > .is-fully-selected::selection,
 .doc > .is-fully-selected ::selection { background: transparent; }
+/* Выделение из документа не показывает ховер и маркеры редактирования таблицы. */
+.doc-selecting .table-widget :is(.tw-outline, .tw-add, .tw-handle, .tw-resize-line),
+.table-widget.is-fully-selected :is(.tw-outline, .tw-add, .tw-handle, .tw-resize-line) { visibility: hidden; }
+.doc-selecting .table-widget .tw-wrap,
+.doc-selecting .table-widget .tw :is(th, td),
+.table-widget.is-fully-selected .tw-wrap,
+.table-widget.is-fully-selected .tw :is(th, td) { cursor: text; }
 
 /* Document examples: list, image placeholder, callout and two columns. */
 .doc ol { margin: 12px 0 16px; padding-inline-start: 28px; }

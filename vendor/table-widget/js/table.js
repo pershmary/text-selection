@@ -3,6 +3,9 @@
   const table = wrap.querySelector('.tw');
   // После отмены разметка таблицы пересоздаётся, поэтому части таблицы ищем каждый раз заново.
   const widget = wrap.closest('.table-widget');   // весь блок таблицы (для «Удалить таблицу»)
+  function documentSelectionActive() {
+    return document.documentElement.classList.contains('doc-selecting') || widget.classList.contains('is-fully-selected');
+  }
   function colgroup() { return table.querySelector('colgroup'); }
   function tbody() { return table.tBodies[0]; }
   const MIN_COL = 40;    // минимальная ширина столбца (как при перетаскивании границ); уже не сжать — таблица прокручивается
@@ -1235,6 +1238,7 @@
 
   wrap.addEventListener('mousemove', function (e) {
     if (drag || resize) return;
+    if (documentSelectionActive()) { setResizeHover(null); hideAll(); return; }
     // Над кнопками, хэндлерами и маркером границу не ловим — у них свои действия.
     if (!e.target.closest('.tw')) { if (resizeHover !== null) setResizeHover(null); return; }
     const w = wrap.getBoundingClientRect();
@@ -1340,6 +1344,7 @@
   }
 
   function show(cell) {
+    if (documentSelectionActive()) { hideAll(); return; }
     current = cell;
     const w = wrap.getBoundingClientRect();
     const r = cell.getBoundingClientRect();
@@ -1383,6 +1388,7 @@
   }
 
   wrap.addEventListener('mouseover', function (e) {
+    if (documentSelectionActive()) { hideAll(); return; }
     if (drag || resize || resizeHover !== null || (cellDrag && cellDrag.active)) return; // во время перетаскивания и у границы кнопки не трогаем
     if (e.target.closest('.tw-add, .tw-handle')) return; // курсор на кнопке — оставляем как есть
     if (e.target === table) return;   // курсор на внешней линии таблицы (по пути с ячейки на хэндлер) — хэндлеры не прячем

@@ -47,6 +47,7 @@
       finishingDrag = false;
       dragOrigin = null;
       dragAnchor = null;
+      document.documentElement.classList.remove('doc-selecting');
     }
     editor.querySelectorAll('.is-fully-selected').forEach(block => {
       block.classList.remove('is-fully-selected');
@@ -63,7 +64,13 @@
       if (block.matches('[contenteditable="false"]')) {
         // The table component manages text and cell ranges within its own area.
         if (block.matches('.table-widget') && block.contains(range.startContainer) && block.contains(range.endContainer)) continue;
-        if (range.intersectsNode(block)) highlight(block, 0, block.clientHeight);
+        if (range.intersectsNode(block)) {
+          const table = block.matches('.table-widget') && block.querySelector('.tw');
+          if (table) {
+            const bounds = table.getBoundingClientRect();
+            highlight(block, bounds.top - block.getBoundingClientRect().top, bounds.height);
+          } else highlight(block, 0, block.clientHeight);
+        }
         continue;
       }
       if (!block.textContent.trim()) continue;
@@ -111,6 +118,7 @@
     dragOrigin = event.target;
     while (dragOrigin && dragOrigin !== editor && dragOrigin.parentElement !== editor) dragOrigin = dragOrigin.parentElement;
     if (dragOrigin === editor) dragOrigin = null;
+    document.documentElement.classList.toggle('doc-selecting', !!dragOrigin && !dragOrigin.matches('.table-widget'));
     schedule();
   });
   document.addEventListener('pointermove', event => {
@@ -124,6 +132,7 @@
     finishingDrag = false;
     dragOrigin = null;
     dragAnchor = null;
+    document.documentElement.classList.remove('doc-selecting');
     pointer = null;
     schedule();
   });

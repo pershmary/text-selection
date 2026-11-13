@@ -16,7 +16,8 @@
   let hover = false;
 
   function state() {
-    if (widget.hidden || document.documentElement.classList.contains('tw-dragging')) return null;
+    if (widget.hidden || document.documentElement.classList.contains('tw-dragging') ||
+        document.documentElement.classList.contains('doc-selecting') || widget.classList.contains('is-fully-selected')) return null;
     // Активная — при настоящем выделении (слой выделения виден); в окне расширенного режима без курсора
     // context() отдаёт всю таблицу как диапазон для команд — это не выделение.
     const sel = wrap.querySelector('.tw-sel');
