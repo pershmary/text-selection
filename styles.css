@@ -42,8 +42,7 @@ body { color: var(--text-text-color); font-weight: var(--font-font-weight-regula
 .app-ritem:hover { background: var(--background-unaccented_background-color) !important; }
 .app-tshadow::after { background: linear-gradient(180deg, var(--components-scroll-shadow_start-color_scroll), transparent); }
 .doc:focus { outline: none; }
-/* The kit supplies variable Inter files; expose their full weight range.
-   Its named Bold token is 600, while the SabyDoc specification requires 700. */
+/* Expose the full weight range of the variable Inter files from ui-kit. */
 @font-face {
   font-family: Inter;
   font-style: normal;
@@ -59,7 +58,7 @@ body { color: var(--text-text-color); font-weight: var(--font-font-weight-regula
   src: url("vendor/ui-kit/fonts/Inter/Inter-italic.var.woff2") format("woff2");
 }
 .doc {
-  --doc-heading-weight: 700;
+  --doc-heading-weight: var(--font-font-weight-bold); /* Semibold, 600 in ui-kit. */
   display: flow-root;
   color: var(--text-text-color);
   font-family: var(--font-font-family-default), sans-serif;
@@ -70,7 +69,8 @@ body { color: var(--text-text-color); font-weight: var(--font-font-weight-regula
 .doc :is(h1, h2, h3, h4, h5, p) { padding: 0; }
 .doc :is(h1, h2, h3, h4, h5) { font-weight: var(--doc-heading-weight); }
 .doc .doc-title {
-  margin: 48px 0 32px;
+  margin: 0;
+  padding: 48px 0 32px;
   font-size: var(--font-font-size-font-size_8xl);
   line-height: 44px;
 }
@@ -90,7 +90,7 @@ body { color: var(--text-text-color); font-weight: var(--font-font-weight-regula
   line-height: 24px;
   font-weight: var(--font-font-weight-regular);
 }
-.doc :is(b, strong) { font-weight: var(--doc-heading-weight); }
+.doc :is(b, strong) { font-weight: 700; }
 .doc :is(i, em) { font-style: italic; }
 .doc u { text-decoration: underline; }
 .doc :is(s, del) { text-decoration: line-through; }
