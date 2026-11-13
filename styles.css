@@ -45,3 +45,22 @@ body { color: var(--text-text-color); font-weight: var(--font-font-weight-regula
 .doc-title { font-size: var(--font-font-size-font-size_8xl); font-weight: var(--font-font-weight-bold); }
 .doc-text { font-size: var(--font-font-size-font-size_xl); }
 .doc h2 { margin: 32px 0 16px; font-size: var(--font-font-size-font-size_5xl); line-height: 1.35; font-weight: var(--font-font-weight-bold); }
+
+/* Partial selection follows glyphs; full selection spans the text column. */
+.doc { --text-selection-color: color-mix(in srgb, var(--border-info_border-color) 20%, transparent); }
+.doc ::selection { background: var(--text-selection-color); color: inherit; }
+.doc > .is-fully-selected { position: relative; isolation: isolate; }
+.doc > .is-fully-selected::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  left: 0;
+  right: 0;
+  top: var(--selection-top);
+  height: var(--selection-height);
+  border-radius: 4px;
+  background: var(--text-selection-color);
+}
+.doc > .is-fully-selected::selection,
+.doc > .is-fully-selected ::selection { background: transparent; }
