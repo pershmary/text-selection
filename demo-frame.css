@@ -1,0 +1,62 @@
+body {
+  margin: 0;
+  background: var(--background-background-color);
+  font-family: Inter, sans-serif;
+}
+
+/* Сцена 1600×900, панель 280, шапка 80, зазор 16 и отступ слева 4. */
+.demo-canvas {
+  position: relative;
+  width: 1900px;
+  height: 980px;
+}
+
+.demo-canvas .df-head,
+.demo-canvas .df-panel,
+.demo-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.demo-stage {
+  width: 1600px;
+  height: 900px;
+  border: 0;
+}
+
+.df-team__label {
+  display: flex;
+  align-items: center;
+  width: 16px;
+  min-height: 17px;
+}
+
+.df-team__label img {
+  display: block;
+}
+
+.demo-selection-scenarios {
+  gap: 4px;
+  background: #f2f2f2;
+}
+
+.demo-selection-scenarios .df-group {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 6px;
+  font-size: 13px;
+  font-weight: var(--font-font-weight-regular);
+  letter-spacing: -0.0141em;
+  text-transform: uppercase;
+}
+
+.demo-selection-scenarios .df-options {
+  gap: 0;
+  padding: 6px;
+}
+
+.demo-selection-scenarios .df-radio__text {
+  white-space: normal;
+}

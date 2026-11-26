@@ -1,7 +1,13 @@
 # Демо выделения текста в Sabydoc
 
-Запуск из корня проекта: `python3 -m http.server 3000 --bind 0.0.0.0`.
-Зависимости и сборка не нужны.
+Откройте `index.html` в браузере. Для запуска через HTTP из корня проекта
+выполните `python -m http.server 3000 --bind 0.0.0.0` и откройте
+`http://localhost:3000`. Зависимости и сборка не нужны.
+
+`index.html` содержит рамку с шапкой и системной областью по образцу
+https://github.com/pershmary/table-widget. Редактор открывается из `demo.html`
+на сцене размером 1600 × 900. Настройки рамки находятся в `demo-frame.js`,
+стили рамки — в `demo-frame.css`.
 
 Оболочка окна взята напрямую из `demo.html` репозитория https://github.com/pershmary/table-widget
 (коммит 618ecbe6562f227f0668d25849c17595dccca9fa).
