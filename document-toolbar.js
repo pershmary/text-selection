@@ -3,12 +3,14 @@
 // Плавающий тулбар документа, Figma 2243:184539. Не использует команды таблицы.
 (() => {
   const editor = document.querySelector('.doc');
+  const title = document.querySelector('.doc-title');
   const appBar = document.querySelector('.app-toolbar');
   let savedRange = null, backward = false, dragging = false, frame = 0;
   let dismissed = false;
   const documentIcon = label => document.querySelector('.app-toolbar [aria-label="' + label + '"] svg').outerHTML;
 
   function selectionRange() {
+    if (title.contains(document.activeElement)) return null;
     const sel = window.getSelection();
     if (!sel.rangeCount || sel.isCollapsed) return null;
     const range = sel.getRangeAt(0);
@@ -19,62 +21,23 @@
     return range.cloneRange();
   }
 
-  function selectedWidgets(range) {
-    const widgets = [];
-    const candidates = [];
-    function visit(widget) {
-      if (widget.matches('.doc-callout, .doc-columns, .doc-column')) {
-        const container = document.createRange();
-        container.selectNode(widget);
-        const whole = range.compareBoundaryPoints(Range.START_TO_START, container) <= 0 && range.compareBoundaryPoints(Range.END_TO_END, container) >= 0;
-        if (whole) candidates.push(widget);
-        else [...widget.children].forEach(visit);
-        return;
-      }
-      if (widget.matches('ol, ul')) {
-        const walker = document.createTreeWalker(widget, NodeFilter.SHOW_TEXT);
-        const texts = [];
-        while (walker.nextNode()) if (walker.currentNode.textContent.trim()) texts.push(walker.currentNode);
-        if (!texts.length) return;
-        const content = document.createRange();
-        content.setStart(texts[0], 0);
-        content.setEnd(texts.at(-1), texts.at(-1).length);
-        const whole = range.compareBoundaryPoints(Range.START_TO_START, content) <= 0 && range.compareBoundaryPoints(Range.END_TO_END, content) >= 0;
-        if (whole) candidates.push(widget);
-        else [...widget.children].filter(child => child.matches('li')).forEach(visit);
-        return;
-      }
-      // Служебная иконка инфоблока не является текстовым виджетом.
-      if (widget.matches('[contenteditable="false"]') && widget.parentElement !== editor) return;
-      if (widget.matches('p, h1, h2, h3, h4, h5, h6, li, [contenteditable="false"]') || !widget.children.length) candidates.push(widget);
-      else [...widget.children].forEach(visit);
-    }
-    [...editor.children].forEach(visit);
-    // Внутренние текстовые блоки — самостоятельные виджеты; контейнер,
-    // выбранный целиком снаружи, остаётся одним блоком.
-    for (const widget of candidates) {
-      if (!range.intersectsNode(widget)) continue;
-      const content = document.createRange();
-      const atomic = widget.matches('[contenteditable="false"]');
-      if (atomic) content.selectNode(widget);
-      else content.selectNodeContents(widget);
-      // Учитываем фактическое пересечение, даже если крайний виджет выделен
-      // частично. Граница в начале следующего блока не считается выделением.
-      if (range.compareBoundaryPoints(Range.START_TO_START, content) > 0) content.setStart(range.startContainer, range.startOffset);
-      if (range.compareBoundaryPoints(Range.END_TO_END, content) < 0) content.setEnd(range.endContainer, range.endOffset);
-      if (!content.collapsed && (atomic || content.toString().trim())) widgets.push(widget);
-    }
-    return widgets;
-  }
+  function selectedTextStyles(range) {
+    const styles = new Set();
+    const texts = document.createNodeIterator(range.commonAncestorContainer, NodeFilter.SHOW_TEXT);
+    for (let node = texts.nextNode(); node; node = texts.nextNode()) {
+      if (!range.intersectsNode(node)) continue;
+      const start = node === range.startContainer ? range.startOffset : 0;
+      const end = node === range.endContainer ? range.endOffset : node.length;
+      if (!node.data.slice(start, end).trim()) continue;
 
-  function widgetKind(widget) {
-    if (widget.matches('.doc-title')) return 'title';
-    if (widget.matches('.doc-image-placeholder')) return 'image';
-    if (widget.matches('.doc-callout')) return 'callout';
-    if (widget.matches('ol, ul, li')) return 'list';
-    if (widget.matches('.doc-columns, .doc-column')) return 'columns';
-    if (widget.matches('.table-widget')) return 'table';
-    return widget.tagName.toLowerCase();
+      const element = node.parentElement;
+      const cell = element.closest('.table-widget .tw :is(td, th)');
+      // При выделении таблицы целиком учитываем текст ячеек и пропускаем служебные элементы.
+      if (!cell && !element.isContentEditable) continue;
+      const block = element.closest('p, h1, h2, h3, h4, h5, h6, td, th');
+      styles.add(block && !block.matches('td, th') ? block.localName : 'p');
+    }
+    return styles;
   }
 
   function restore() {
@@ -88,7 +51,7 @@
 
   function execute(command, value) {
     if (!restore()) return;
-    document.execCommand(command, false, value);
+    DocumentHistory.change(() => document.execCommand(command, false, value));
     savedRange = selectionRange();
     schedule();
   }
@@ -112,21 +75,19 @@
     { sep: true },
     { id: 'link', icon: '\uE6A7', title: 'Ссылка', passive: true },
     { id: 'voice', svg: documentIcon('Голосовой ввод'), title: 'Голосовой ввод', passive: true },
-    { id: 'assistant', svg: documentIcon('Помощник'), title: 'SabyAI', passive: true },
-    { sep: true },
-    // Только визуальная команда: поведение объединения блоков пока не задано.
-    { id: 'merge', icon: '\uEBD1', title: 'Объединить', passive: true },
-    { id: 'delete', icon: '\uEB72', title: 'Удалить', danger: true, passive: true },
-    { id: 'more', icon: '\uEAB4', title: 'Ещё', passive: true }
+    { id: 'assistant', svg: '<img src="assets/menu-ai.svg" width="24" height="24" alt="">', title: 'SabyAI', passive: true },
+    { id: 'more', icon: '\uEAB4', title: 'Ещё', onClick: button => menu.toggle(button) }
   ] });
   toolbar.el.classList.add('doc-toolbar');
   toolbar.el.querySelectorAll('button').forEach(button => { button.tabIndex = 0; });
-  const actionsSeparator = toolbar.button('merge').previousElementSibling;
+
+  const menu = createSelectionMenu({ editor, toolbar, selectionRange, restore, execute, remember(range) { savedRange = range; } });
 
   function update() {
     frame = 0;
     const range = selectionRange();
     const inControls = toolbar.el.contains(document.activeElement);
+    if (menu.isOpen()) return;
     if (dragging || dismissed || (!range && !inControls)) {
       toolbar.hide();
       return;
@@ -137,25 +98,25 @@
       backward = sel.anchorNode === range.endContainer && sel.anchorOffset === range.endOffset;
     }
     if (!savedRange || !savedRange.startContainer.isConnected || !savedRange.endContainer.isConnected) { toolbar.hide(); return; }
-    const widgets = selectedWidgets(savedRange);
-    const kinds = new Set(widgets.map(widgetKind));
-    if (!widgets.length || (widgets.length === 1 && kinds.has('image'))) { toolbar.hide(); return; }
-    const labels = { p: 'Основной текст', h1: 'Заголовок 1', h2: 'Заголовок 2', h3: 'Заголовок 3', h4: 'Заголовок 4', h5: 'Заголовок 5', title: 'Заголовок документа', image: 'Изображение', callout: 'Инфоблок', list: 'Список', columns: 'Колонки', table: 'Таблица' };
-    toolbar.button('style').querySelector('.tb-text').textContent = kinds.size > 1 ? 'Смешанный' : labels[[...kinds][0]] || 'Основной текст';
-    const multipleWidgets = widgets.length > 1;
-    toolbar.el.setAttribute('aria-label', multipleWidgets ? 'Форматирование + объединение' : 'Форматирование');
-    toolbar.button('assistant').hidden = multipleWidgets;
-    toolbar.button('merge').hidden = !multipleWidgets;
-    toolbar.button('delete').hidden = !multipleWidgets;
-    actionsSeparator.hidden = !multipleWidgets;
+    const styles = selectedTextStyles(savedRange);
+    if (!styles.size) { toolbar.hide(); return; }
+    const labels = { p: 'Основной текст', h1: 'Заголовок 1', h2: 'Заголовок 2', h3: 'Заголовок 3', h4: 'Заголовок 4', h5: 'Заголовок 5', h6: 'Заголовок 6' };
+    toolbar.button('style').querySelector('.tb-text').textContent = styles.size > 1 ? 'Не выбрано' : labels[[...styles][0]];
     const rects = [...savedRange.getClientRects()].filter(rect => rect.width && rect.height);
     const edge = backward ? rects.at(-1) : rects[0];
     const ceiling = Math.max(8, appBar.getBoundingClientRect().bottom + 8);
-    if (!edge || edge.bottom <= ceiling || edge.top >= window.innerHeight) { toolbar.hide(); return; }
+    if (!edge) { toolbar.hide(); return; }
     toolbar.el.hidden = false;
     const w = toolbar.el.offsetWidth, h = toolbar.el.offsetHeight;
     const x = backward ? edge.right : edge.left;
-    toolbar.showAt(Math.max(8, Math.min(x - w / 2, window.innerWidth - w - 8)), Math.max(ceiling, edge.top - h - 8));
+    const viewportBottom = window.innerHeight - h - 8;
+    let y = Math.min(edge.top - h - 8, viewportBottom);
+    if (backward) {
+      const selectionBottom = Math.max(...rects.map(rect => rect.bottom));
+      const belowViewport = rects.every(rect => rect.top >= window.innerHeight);
+      y = belowViewport ? viewportBottom : selectionBottom + 8;
+    }
+    toolbar.showAt(Math.max(8, Math.min(x - w / 2, window.innerWidth - w - 8)), Math.max(ceiling, y));
   }
 
   function schedule() { if (!frame) frame = requestAnimationFrame(update); }
