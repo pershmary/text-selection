@@ -367,7 +367,7 @@ function createSelectionMenu({ editor, toolbar, selectionRange, restore, execute
     align.setAttribute('aria-label','Выравнивание');
     main.querySelector('.twin-colors').before(align, main.querySelector('.twin-vdiv').cloneNode());
     for (const [i, button] of [...main.querySelectorAll('.twin-colors button')].entries()) {
-      if (i) button.replaceChildren(asset('marker'));
+      if (i) button.replaceChildren(toolbar.button('background').querySelector('svg').cloneNode(true));
       button.disabled = true;
       const rgb = common(runs.map(el => {
         if (!i) return getComputedStyle(el).color;
@@ -375,9 +375,9 @@ function createSelectionMenu({ editor, toolbar, selectionRange, restore, execute
           const bg = getComputedStyle(el).backgroundColor;
           if (bg !== 'rgba(0, 0, 0, 0)') return bg;
         }
-        return 'rgb(255, 255, 255)';
-      }), 'rgb(255, 255, 255)');
-      if (i) button.style.setProperty('--marker-color', rgb);
+        return 'none';
+      }), i ? 'none' : 'rgb(255, 255, 255)');
+      if (i) button.querySelector('rect').setAttribute('fill', rgb);
       else button.firstElementChild.style.backgroundColor = rgb;
     }
     body.insertAdjacentHTML('beforeend', `

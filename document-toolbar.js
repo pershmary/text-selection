@@ -23,6 +23,7 @@
 
   function selectedTextStyles(range) {
     const styles = new Set();
+    const colors = new Set();
     const texts = document.createNodeIterator(range.commonAncestorContainer, NodeFilter.SHOW_TEXT);
     for (let node = texts.nextNode(); node; node = texts.nextNode()) {
       if (!range.intersectsNode(node)) continue;
@@ -34,10 +35,11 @@
       const cell = element.closest('.table-widget .tw :is(td, th)');
       // При выделении таблицы целиком учитываем текст ячеек и пропускаем служебные элементы.
       if (!cell && !element.isContentEditable) continue;
+      colors.add(getComputedStyle(element).color);
       const block = element.closest('p, h1, h2, h3, h4, h5, h6, td, th');
       styles.add(block && !block.matches('td, th') ? block.localName : 'p');
     }
-    return styles;
+    return { styles, colors };
   }
 
   function restore() {
@@ -81,6 +83,10 @@
   toolbar.el.classList.add('doc-toolbar');
   toolbar.el.querySelectorAll('button').forEach(button => { button.tabIndex = 0; });
 
+  const markerSwatch = toolbar.button('background').querySelector('svg rect');
+  const colorSwatch = markerSwatch.cloneNode();
+  toolbar.button('color').querySelector('svg rect').replaceWith(colorSwatch);
+
   const menu = createSelectionMenu({ editor, toolbar, selectionRange, restore, execute, remember(range) { savedRange = range; } });
 
   function update() {
@@ -98,10 +104,13 @@
       backward = sel.anchorNode === range.endContainer && sel.anchorOffset === range.endOffset;
     }
     if (!savedRange || !savedRange.startContainer.isConnected || !savedRange.endContainer.isConnected) { toolbar.hide(); return; }
-    const styles = selectedTextStyles(savedRange);
+    const { styles, colors } = selectedTextStyles(savedRange);
     if (!styles.size) { toolbar.hide(); return; }
     const labels = { p: 'Основной текст', h1: 'Заголовок 1', h2: 'Заголовок 2', h3: 'Заголовок 3', h4: 'Заголовок 4', h5: 'Заголовок 5', h6: 'Заголовок 6' };
     toolbar.button('style').querySelector('.tb-text').textContent = styles.size > 1 ? 'Не выбрано' : labels[[...styles][0]];
+    const mixedColors = colors.size > 1;
+    colorSwatch.setAttribute('fill', mixedColors ? 'white' : [...colors][0]);
+    colorSwatch.setAttribute('stroke', mixedColors ? markerSwatch.getAttribute('stroke') : 'none');
     const rects = [...savedRange.getClientRects()].filter(rect => rect.width && rect.height);
     const edge = backward ? rects.at(-1) : rects[0];
     const ceiling = Math.max(8, appBar.getBoundingClientRect().bottom + 8);

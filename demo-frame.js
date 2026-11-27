@@ -6,14 +6,15 @@
     { label: 'Разработчик Web', name: 'Красильников Андрей', icon: 'web.svg', height: 17 }
   ];
   const selectionScenarios = [
-    { id: 'paragraphs', title: 'Между абзацами' },
-    { id: 'heading', title: 'Между заголовком и абзацем' },
-    { id: 'callout', title: 'Между абзацем и инфоблоком' },
-    { id: 'image', title: 'Между абзацами и изображением' },
-    { id: 'list-paragraph', title: 'Между списком и абзацем' },
-    { id: 'list-items', title: 'Между пунктами списка' },
-    { id: 'table', title: 'Между абзацем и таблицей' },
-    { id: 'column', title: 'Между абзацем и колонкой' }
+    { id: 'paragraphs', title: '2 абзаца' },
+    { id: 'heading', title: 'Заголовок и абзац' },
+    { id: 'callout', title: 'Абзац и инфоблок' },
+    { id: 'image', title: 'Абзац и изображение' },
+    { id: 'list-paragraph', title: 'Элемент списка и абзац' },
+    { id: 'list-items', title: 'Элементы списка' },
+    { id: 'table', title: 'Абзац и таблица' },
+    { id: 'column', title: 'Абзац и колонка' },
+    { id: 'column-widgets', title: 'Виджеты в колонках' }
   ];
   // Local file URLs have opaque origins; both pages also check the sender window.
   const stageOrigin = location.protocol === 'file:' ? '*' : location.origin;

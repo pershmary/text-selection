@@ -43,6 +43,11 @@ body { color: var(--text-text-color); font-weight: var(--font-font-weight-regula
 .app-tshadow::after { background: linear-gradient(180deg, var(--components-scroll-shadow_start-color_scroll), transparent); }
 .doc:focus, .doc-title input:focus { outline: none; }
 
+img[src="assets/menu-ai.svg"] {
+  border-radius: 4px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3CradialGradient id='grad' gradientUnits='userSpaceOnUse' cx='0' cy='0' r='10' gradientTransform='matrix(-1.0286 -0.68571 0.14288 -0.95293 12 12)'%3E%3Cstop stop-color='%23c0cdff' offset='0'/%3E%3Cstop stop-color='%23ded7ff' offset='.54519'/%3E%3Cstop stop-color='%23ded7ff' stop-opacity='0' offset='1'/%3E%3C/radialGradient%3E%3Crect width='24' height='24' fill='url(%23grad)'/%3E%3C/svg%3E");
+}
+
 /* Плавающий тулбар документа — Figma 2243:184539. */
 .doc-toolbar {
   position: fixed;
@@ -88,6 +93,11 @@ body { color: var(--text-text-color); font-weight: var(--font-font-weight-regula
   font-size: var(--font-font-size-font-size_8xl);
   line-height: 44px;
 }
+.doc, .doc-title {
+  --doc-side-space: calc((100% - var(--doc-width)) / 2);
+  margin-inline-start: max(0px, round(up, var(--doc-side-space), 1px));
+  margin-inline-end: max(0px, round(down, var(--doc-side-space), 1px));
+}
 .doc-title input {
   display: block;
   box-sizing: border-box;
@@ -120,17 +130,16 @@ body { color: var(--text-text-color); font-weight: var(--font-font-weight-regula
 .doc u { text-decoration: underline; }
 .doc :is(s, del) { text-decoration: line-through; }
 
-/* Partial selection follows glyphs; full selection spans the text column. */
 .page {
   --doc-heading-weight: var(--font-font-weight-bold);
   --text-selection-color: color-mix(in srgb, var(--border-info_border-color) 20%, transparent);
 }
 .doc ::selection, .doc-title input::selection { background: var(--text-selection-color); color: inherit; }
-.doc .is-fully-selected { position: relative; isolation: isolate; }
-.doc .is-fully-selected::before {
+.doc .table-widget.is-fully-selected { position: relative; isolation: isolate; }
+.doc .table-widget.is-fully-selected::before {
   content: '';
   position: absolute;
-  z-index: -1;
+  z-index: 1;
   pointer-events: none;
   left: 0;
   right: 0;
@@ -139,15 +148,7 @@ body { color: var(--text-text-color); font-weight: var(--font-font-weight-regula
   border-radius: 4px;
   background: var(--text-selection-color);
 }
-.doc h1.is-fully-selected::before {
-  bottom: calc(-1 * var(--heading-divider-width));
-  height: auto;
-}
-/* Paint over opaque widget backgrounds as well as their text. */
-.doc > .is-fully-selected:not(:is(p, h1, h2, h3, h4, h5, h6))::before { z-index: 1; }
-.doc .is-fully-selected::selection,
-.doc .is-fully-selected ::selection { background: transparent; }
-.doc .tw :is(th, td).is-fully-selected::before { left: 8px; right: 8px; }
+.doc .table-widget.is-fully-selected ::selection { background: transparent; }
 /* Выделение из документа не показывает ховер и маркеры редактирования таблицы. */
 .doc-selecting .table-widget :is(.tw-outline, .tw-add, .tw-handle, .tw-resize-line),
 .table-widget.is-fully-selected :is(.tw-outline, .tw-add, .tw-handle, .tw-resize-line) { visibility: hidden; }
@@ -312,10 +313,6 @@ body { color: var(--text-text-color); font-weight: var(--font-font-weight-regula
 .selection-settings .twin-style-row2 { justify-content: space-between; gap: 0; }
 .selection-settings .twin-vdiv::before { background: #e6e6e6; }
 .selection-settings .twin-textcolor { width: 24px; height: 24px; border: 1px solid #d2d6da; box-sizing: border-box; }
-.selection-settings .twin-colors button:last-of-type { position: relative; }
-.selection-settings .twin-colors button:last-of-type::after {
-  content: ""; position: absolute; bottom: 5px; width: 16px; height: 2px; background: var(--marker-color, white);
-}
 .selection-settings .metrics, .selection-settings .border-setting { padding: 8px 12px; color: #8991a9; font: 14px Inter, sans-serif; }
 .selection-settings .metrics { display: grid; gap: 8px; }
 .metrics > div { display: flex; align-items: center; gap: 8px; height: 24px; }

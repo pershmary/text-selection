@@ -12,7 +12,8 @@
     ['list-paragraph', [':scope > ol > li:last-child', ':scope > ol + p']],
     ['list-items', [':scope > ol > li:first-child', ':scope > ol > li:nth-child(2)']],
     ['table', [':scope > p:has(+ .table-widget)', ':scope > .table-widget']],
-    ['column', [':scope > p:has(+ .doc-columns)', '.doc-column:first-child h3']]
+    ['column', [':scope > p:has(+ .doc-columns)', '.doc-column:first-child h3']],
+    ['column-widgets', ['.doc-column:first-child > p:last-child', '.doc-column:last-child > h3']]
   ]);
   let activeScenario;
 
